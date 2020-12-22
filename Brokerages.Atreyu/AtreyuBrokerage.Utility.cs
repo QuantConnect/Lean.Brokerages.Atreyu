@@ -26,38 +26,39 @@ namespace QuantConnect.Brokerages.Atreyu
     {
         private Order ConvertOrder(Client.Messages.Order atreyuOrder)
         {
-            Order leanOrder;
-            switch (atreyuOrder.OrdType)
-            {
-                case "1":
-                    leanOrder = new MarketOrder { Price = atreyuOrder.Price };
-                    break;
-                case "2":
-                    leanOrder = new LimitOrder { LimitPrice = atreyuOrder.Price };
-                    break;
-                case "3":
-                    leanOrder = new StopMarketOrder { StopPrice = atreyuOrder.Price };
-                    break;
-                case "4":
-                    leanOrder = new StopLimitOrder { StopPrice = atreyuOrder.StopPrice, LimitPrice = atreyuOrder.Price };
-                    break;
-                case "5":
-                    leanOrder = new MarketOnCloseOrder() { Price = atreyuOrder.Price };
-                    break;
+            //Order leanOrder;
+            //switch (atreyuOrder.OrdType)
+            //{
+            //    case "1":
+            //        leanOrder = new MarketOrder { Price = atreyuOrder.Price };
+            //        break;
+            //    case "2":
+            //        leanOrder = new LimitOrder { LimitPrice = atreyuOrder.Price };
+            //        break;
+            //    case "3":
+            //        leanOrder = new StopMarketOrder { StopPrice = atreyuOrder.Price };
+            //        break;
+            //    case "4":
+            //        leanOrder = new StopLimitOrder { StopPrice = atreyuOrder.StopPrice, LimitPrice = atreyuOrder.Price };
+            //        break;
+            //    case "5":
+            //        leanOrder = new MarketOnCloseOrder() { Price = atreyuOrder.Price };
+            //        break;
 
-                default:
-                    throw new InvalidOperationException($"AtreyuBrokerage.ConvertOrder: Unsupported order type returned from brokerage: {atreyuOrder.OrdType}");
-            }
+            //    default:
+            //        throw new InvalidOperationException($"AtreyuBrokerage.ConvertOrder: Unsupported order type returned from brokerage: {atreyuOrder.OrdType}");
+            //}
 
-            leanOrder.Quantity = atreyuOrder.Quantity;
-            leanOrder.BrokerId = new List<string> { atreyuOrder.ClOrdID.ToStringInvariant() };
-            // TODO: support options
-            leanOrder.Symbol = _symbolMapper.GetLeanSymbol(atreyuOrder.Symbol, SecurityType.Equity, Market.USA);
-            leanOrder.Time = DateTime.ParseExact(atreyuOrder.TransactTime, "YYYYMMDD-hh:mm:ss.s", CultureInfo.InvariantCulture);
-            leanOrder.Status = ConvertOrderStatus(atreyuOrder);
-            leanOrder.Price = atreyuOrder.Price;
+            //leanOrder.Quantity = atreyuOrder.Quantity;
+            //leanOrder.BrokerId = new List<string> { atreyuOrder.ClOrdID.ToStringInvariant() };
+            //// TODO: support options
+            //leanOrder.Symbol = _symbolMapper.GetLeanSymbol(atreyuOrder.Symbol, SecurityType.Equity, Market.USA);
+            //leanOrder.Time = DateTime.ParseExact(atreyuOrder.TransactTime, "YYYYMMDD-hh:mm:ss.s", CultureInfo.InvariantCulture);
+            //leanOrder.Status = ConvertOrderStatus(atreyuOrder);
+            //leanOrder.Price = atreyuOrder.Price;
 
-            return leanOrder;
+            //return leanOrder;
+            throw new NotImplementedException();
         }
 
         private Holding ConvertHolding(Client.Messages.Position position)
