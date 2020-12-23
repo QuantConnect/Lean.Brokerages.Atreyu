@@ -26,39 +26,72 @@ namespace QuantConnect.Brokerages.Atreyu
     {
         private Order ConvertOrder(Client.Messages.Order atreyuOrder)
         {
-            //Order leanOrder;
-            //switch (atreyuOrder.OrdType)
-            //{
-            //    case "1":
-            //        leanOrder = new MarketOrder { Price = atreyuOrder.Price };
-            //        break;
-            //    case "2":
-            //        leanOrder = new LimitOrder { LimitPrice = atreyuOrder.Price };
-            //        break;
-            //    case "3":
-            //        leanOrder = new StopMarketOrder { StopPrice = atreyuOrder.Price };
-            //        break;
-            //    case "4":
-            //        leanOrder = new StopLimitOrder { StopPrice = atreyuOrder.StopPrice, LimitPrice = atreyuOrder.Price };
-            //        break;
-            //    case "5":
-            //        leanOrder = new MarketOnCloseOrder() { Price = atreyuOrder.Price };
-            //        break;
+            Order leanOrder;
 
-            //    default:
-            //        throw new InvalidOperationException($"AtreyuBrokerage.ConvertOrder: Unsupported order type returned from brokerage: {atreyuOrder.OrdType}");
-            //}
+            var symbol = _symbolMapper.GetLeanSymbol(atreyuOrder.Symbol, SecurityType.Equity, Market.USA);
+            var datetime = DateTime.ParseExact(atreyuOrder.TransactTime, "YYYYMMDD-hh:mm:ss.s", CultureInfo.InvariantCulture);
+            switch (atreyuOrder.OrdType)
+            {
+                case "1":
+                    leanOrder = new MarketOrder(
+                        symbol,
+                        atreyuOrder.Quantity,
+                        datetime);
+                    break;
+                case "2":
+                    leanOrder = new LimitOrder(
+                        symbol,
+                        atreyuOrder.Quantity,
+                        atreyuOrder.Price,
+                        datetime);
+                    break;
+                case "3":
+                    leanOrder = new StopMarketOrder(
+                        symbol,
+                        atreyuOrder.Quantity,
+                        atreyuOrder.StopPrice,
+                        datetime);
+                    break;
+                case "4":
+                    leanOrder = new StopLimitOrder(
+                        symbol,
+                        atreyuOrder.Quantity,
+                        atreyuOrder.StopPrice,
+                        atreyuOrder.Price,
+                        datetime);
+                    break;
+                case "5":
+                    leanOrder = new MarketOnCloseOrder(
+                        symbol,
+                        atreyuOrder.Quantity,
+                        datetime);
+                    break;
 
-            //leanOrder.Quantity = atreyuOrder.Quantity;
-            //leanOrder.BrokerId = new List<string> { atreyuOrder.ClOrdID.ToStringInvariant() };
-            //// TODO: support options
-            //leanOrder.Symbol = _symbolMapper.GetLeanSymbol(atreyuOrder.Symbol, SecurityType.Equity, Market.USA);
-            //leanOrder.Time = DateTime.ParseExact(atreyuOrder.TransactTime, "YYYYMMDD-hh:mm:ss.s", CultureInfo.InvariantCulture);
+                default:
+                    throw new InvalidOperationException($"AtreyuBrokerage.ConvertOrder: Unsupported order type returned from brokerage: {atreyuOrder.OrdType}");
+            }
+            leanOrder.BrokerId.Add(atreyuOrder.ClOrdID.ToStringInvariant());
+            leanOrder.Properties.TimeInForce = ConvertTimeInForce(atreyuOrder.TimeInForce);
+
+            //TODO: setup proper status if possible
             //leanOrder.Status = ConvertOrderStatus(atreyuOrder);
-            //leanOrder.Price = atreyuOrder.Price;
 
-            //return leanOrder;
-            throw new NotImplementedException();
+            return leanOrder;
+        }
+
+        private TimeInForce ConvertTimeInForce(string atreyuOrderTimeInForce)
+        {
+            switch (atreyuOrderTimeInForce)
+            {
+                case "1":
+                    return TimeInForce.GoodTilCanceled;
+                case "2":
+                case "3":
+                    throw new ArgumentException($"AtreyuBrokerage.ConvertTimeInForce: Unsupported TimeInForce value returned from brokerage: {atreyuOrderTimeInForce}");
+                case "0":
+                default:
+                    return TimeInForce.Day;
+            }
         }
 
         private Holding ConvertHolding(Client.Messages.Position position)
@@ -73,7 +106,7 @@ namespace QuantConnect.Brokerages.Atreyu
                     Quantity = position.LongQty > 0 ? position.LongQty : position.ShortQty,
                     //UnrealizedPnL = position.ProfitLoss,
                     CurrencySymbol = "$",
-                   // MarketPrice = ??,
+                    // MarketPrice = ??,
                     //Type = position.SecurityType
                 };
             }
