@@ -17,9 +17,8 @@ using Newtonsoft.Json;
 
 namespace QuantConnect.Brokerages.Atreyu.Client.Messages
 {
-    public class SignedMessage : RequestMessage
+    public class LogonResponseMessage : ResponseMessage
     {
-        [JsonProperty(PropertyName = "sessionid", Required = Required.DisallowNull)]
         public string SessionId { get; set; }
     }
 }

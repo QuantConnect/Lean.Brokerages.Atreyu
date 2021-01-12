@@ -13,16 +13,20 @@
  * limitations under the License.
 */
 
+using QuantConnect.Brokerages.Atreyu.Client.Messages;
 using QuantConnect.Configuration;
-using QuantConnect.Data;
-using QuantConnect.Interfaces;
-using QuantConnect.Packets;
-using QuantConnect.Securities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using QuantConnect.Brokerages.Atreyu.Client.Messages;
+using QuantConnect.Data;
+using QuantConnect.Interfaces;
+using QuantConnect.Logging;
+using QuantConnect.Orders;
+using QuantConnect.Orders.Fees;
+using QuantConnect.Packets;
+using QuantConnect.Securities;
 using QuantConnect.Util;
+using HistoryRequest = QuantConnect.Data.HistoryRequest;
 using Order = QuantConnect.Orders.Order;
 
 namespace QuantConnect.Brokerages.Atreyu
@@ -104,7 +108,44 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override bool PlaceOrder(Order order)
         {
-            throw new NotImplementedException();
+            var response = _zeroMQ.Send<ResponseMessage>(new NewEquityOrderMessage()
+            {
+                Side = "1",
+                Symbol = "GOOG",
+                ClOrdID = "goog1",
+                OrderQty = 1,
+                Price = 1,
+                ExDestination = "NSDQ",
+                OrdType = "2"
+            });
+
+            if (response.Status != 0)
+            {
+                var message = $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                OnOrderEvent(new OrderEvent(
+                        order,
+                        DateTime.UtcNow,
+                        OrderFee.Zero,
+                        "Atreyu Order Event")
+                        {
+                            Status = OrderStatus.Invalid
+                        });
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
+            }
+            else
+            {
+                OnOrderEvent(new OrderEvent(
+                        order,
+                        Time.ParseDate(response.TransactTime),
+                        OrderFee.Zero,
+                        "Atreyu Order Event")
+                        {
+                            Status = OrderStatus.Submitted
+                        });
+                Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
+            }
+
+            return true;
         }
 
         public override bool UpdateOrder(Order order)
@@ -127,6 +168,11 @@ namespace QuantConnect.Brokerages.Atreyu
         {
             _zeroMQ.Disconnect();
             _zeroMQ.DisposeSafely();
+        }
+
+        public override IEnumerable<BaseData> GetHistory(HistoryRequest request)
+        {
+            throw new InvalidOperationException("Atreyu doesn't support history");
         }
     }
 }

@@ -29,16 +29,18 @@ namespace QuantConnect.Brokerages.Atreyu
     {
         private readonly SubscriberSocket _subscribeSocket;
         private CancellationTokenSource _cancellationTokenSource;
+        private static TimeSpan _timeout = TimeSpan.FromSeconds(10);
 
         private readonly string _host;
         private readonly int _reqPort;
         private readonly int _subPort;
 
         private bool _connected;
+        private string _sessionId;
 
         public event EventHandler<string> MessageRecieved;
 
-        public bool IsConnected => _connected && !_subscribeSocket.IsDisposed;
+        public bool IsConnected => _connected;
 
         public ZeroMQConnectionManager(string host, int reqPort, int subPort)
         {
@@ -70,7 +72,13 @@ namespace QuantConnect.Brokerages.Atreyu
                 Log.Trace($"ZeroMQConnectionManager: stopped polling messages");
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
-            var response = Send<ResponseMessage>(new LogonMessage());
+            var response = Send<LogonResponseMessage>(new LogonMessage());
+            if (response.Status != 0)
+            {
+                throw new Exception("AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate.");
+            }
+
+            _sessionId = response.SessionId;
             _connected = true;
         }
 
@@ -88,8 +96,18 @@ namespace QuantConnect.Brokerages.Atreyu
                 using (var requestSocket = new RequestSocket())
                 {
                     requestSocket.Connect(_host + $":{_reqPort}");
-                    requestSocket.SendFrame(JsonConvert.SerializeObject(message));
-                    var response = requestSocket.ReceiveFrameString();
+
+                    if (message is SignedMessage)
+                    {
+                        (message as SignedMessage).SessionId = _sessionId;
+                    }
+
+                    requestSocket.TrySendFrame(
+                        _timeout,
+                        JsonConvert.SerializeObject(message));
+
+                    string response;
+                    requestSocket.TryReceiveFrameString(_timeout, out response);
                     return response;
                 }
             }
