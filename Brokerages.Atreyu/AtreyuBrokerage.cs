@@ -18,6 +18,8 @@ using QuantConnect.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using QuantConnect.Data;
 using QuantConnect.Interfaces;
 using QuantConnect.Logging;
@@ -37,7 +39,8 @@ namespace QuantConnect.Brokerages.Atreyu
         private readonly IOrderProvider _orderProvider;
         private readonly ZeroMQConnectionManager _zeroMQ;
         private readonly ISymbolMapper _symbolMapper = new AtreyuSymbolMapper();
-        public AtreyuBrokerage(IAlgorithm algorithm)
+
+        public AtreyuBrokerage(IAlgorithm algorithm, IDataAggregator aggregator)
             : this(Config.Get("atreyu-host"),
                 Config.GetInt("atreyu-req-port"),
                 Config.GetInt("atreyu-sub-port"),
@@ -66,6 +69,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override List<Order> GetOpenOrders()
         {
+            Log.Trace("AtreyuBrokerage.GetOpenOrders()");
             var response = _zeroMQ.Send<QueryResultMessage<Client.Messages.Order>>(new QueryOpenOrdersMessage());
             if (response.Status != 0)
             {
@@ -84,6 +88,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override List<Holding> GetAccountHoldings()
         {
+            Log.Trace("AtreyuBrokerage.GetAccountHoldings()");
             var response = _zeroMQ.Send<QueryResultMessage<Client.Messages.Position>>(new QueryPositionsMessage());
             if (response.Status != 0)
             {
@@ -102,7 +107,8 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override List<CashAmount> GetCashBalance()
         {
-            return new List<CashAmount>();
+            Log.Trace("AtreyuBrokerage.GetCashBalance()");
+            return new List<CashAmount>() { new CashAmount(1000, "USD") };
             //throw new NotImplementedException();
         }
 
@@ -127,9 +133,9 @@ namespace QuantConnect.Brokerages.Atreyu
                         DateTime.UtcNow,
                         OrderFee.Zero,
                         "Atreyu Order Event")
-                        {
-                            Status = OrderStatus.Invalid
-                        });
+                {
+                    Status = OrderStatus.Invalid
+                });
                 OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
             }
             else
@@ -139,9 +145,9 @@ namespace QuantConnect.Brokerages.Atreyu
                         Time.ParseDate(response.TransactTime),
                         OrderFee.Zero,
                         "Atreyu Order Event")
-                        {
-                            Status = OrderStatus.Submitted
-                        });
+                {
+                    Status = OrderStatus.Submitted
+                });
                 Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
             }
 

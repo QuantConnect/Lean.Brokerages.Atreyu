@@ -39,7 +39,8 @@ namespace QuantConnect.Brokerages.Atreyu
             OptionRight optionRight = OptionRight.Call
             )
         {
-            throw new NotImplementedException();
+            return Symbol.Create(brokerageSymbol, SecurityType.Equity, Market.USA);
+            //throw new NotImplementedException();
         }
     }
 }
