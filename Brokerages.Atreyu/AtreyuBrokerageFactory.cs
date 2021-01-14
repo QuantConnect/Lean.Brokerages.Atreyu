@@ -96,9 +96,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 job.BrokerageData["atreyu-sub-port"].ToInt32(),
                 job.BrokerageData["atreyu-username"],
                 job.BrokerageData["atreyu-password"],
-                algorithm,
-                Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager")));
-            Composer.Instance.AddPart<IDataQueueHandler>(brokerage);
+                algorithm);
 
             return brokerage;
         }
