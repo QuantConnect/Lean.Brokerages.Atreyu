@@ -121,8 +121,12 @@ namespace QuantConnect.Brokerages.Atreyu
                 ClOrdID = "goog1",
                 OrderQty = 1,
                 Price = 1,
+                DeliverToCompID = "CS",
                 ExDestination = "NSDQ",
-                OrdType = "2"
+                ExecInst = "1",
+                OrdType = "2",
+                HandlInst = "1",
+                TransactTime = DateTime.UtcNow.ToString("yyyyMMdd-HH:mm:ss.fff")
             });
 
             if (response.Status != 0)
