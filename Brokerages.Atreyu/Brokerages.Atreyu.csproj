@@ -86,8 +86,10 @@
     <Compile Include="AtreyuFeeModel.cs" />
     <Compile Include="AtreyuOrderProperties.cs" />
     <Compile Include="AtreyuSymbolMapper.cs" />
+    <Compile Include="Client\Messages\CancelOptionOrderMessage.cs" />
     <Compile Include="Client\Messages\LogonResponseMessage.cs" />
     <Compile Include="Client\Messages\LogonMessage.cs" />
+    <Compile Include="Client\Messages\CancelEquityOrderMessage.cs" />
     <Compile Include="Client\Messages\NewEquityOrderMessage.cs" />
     <Compile Include="Client\Messages\NewOptionOrderMessage.cs" />
     <Compile Include="Client\Messages\Order.cs" />

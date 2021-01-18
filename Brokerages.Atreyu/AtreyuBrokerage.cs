@@ -119,8 +119,8 @@ namespace QuantConnect.Brokerages.Atreyu
                 Side = "1",
                 Symbol = "GOOG",
                 ClOrdID = "goog1",
-                OrderQty = 1,
-                Price = 1,
+                OrderQty = 0.5m,
+                Price = 1500,
                 DeliverToCompID = "CS",
                 ExDestination = "NSDQ",
                 ExecInst = "1",
@@ -165,7 +165,50 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override bool CancelOrder(Order order)
         {
-            throw new NotImplementedException();
+            Log.Trace("AtreyuBrokerage.CancelOrder(): {0}", order);
+
+            if (!order.BrokerId.Any())
+            {
+                // we need the brokerage order id in order to perform a cancellation
+                Log.Trace("AtreyuBrokerage.CancelOrder(): Unable to cancel order without BrokerId.");
+                return false;
+            }
+
+            var clOrdId = order.BrokerId.First();
+            var response = _zeroMQ.Send<ResponseMessage>(new CancelEquityOrderMessage()
+            {
+                ClOrdID = clOrdId,
+                OrigClOrdID = clOrdId,
+                TransactTime = DateTime.UtcNow.ToString("yyyyMMdd-HH:mm:ss.fff")
+            });
+
+            if (response.Status != 0)
+            {
+                var message = $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                OnOrderEvent(new OrderEvent(
+                    order,
+                    DateTime.UtcNow,
+                    OrderFee.Zero,
+                    "Atreyu Order Event")
+                {
+                    Status = OrderStatus.Invalid
+                });
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
+            }
+            else
+            {
+                OnOrderEvent(new OrderEvent(
+                    order,
+                    Time.ParseDate(response.TransactTime),
+                    OrderFee.Zero,
+                    "Atreyu Order Event")
+                {
+                    Status = OrderStatus.Canceled
+                });
+                Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
+            }
+
+            return true;
         }
 
         public override void Connect()
