@@ -34,7 +34,7 @@ namespace QuantConnect.Brokerages.Atreyu.Client.Messages
         public string Symbol { get; set; }
 
         [JsonProperty(PropertyName = "38", Required = Required.DisallowNull)]
-        public decimal OrderQty { get; set; }
+        public int OrderQty { get; set; }
 
         [JsonProperty(PropertyName = "44")]
         public decimal Price { get; set; }

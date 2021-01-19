@@ -13,17 +13,14 @@
  * limitations under the License.
 */
 
+using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace QuantConnect.Brokerages.Atreyu.Client.Messages
 {
-    public class ResponseMessage
+    public class OpenOrdersResultMessage : ResponseMessage
     {
-        [JsonProperty(PropertyName = "status")]
-        public int Status { get; protected set; }
-
-        public string Text { get; protected set; }
-        
-        public string SendingTime { get; set; }
+        [JsonProperty(PropertyName = "NoOrders", Required = Required.DisallowNull)]
+        public IEnumerable<Order> Orders { get; set; }
     }
 }

@@ -29,38 +29,38 @@ namespace QuantConnect.Brokerages.Atreyu
             Order leanOrder;
 
             var symbol = _symbolMapper.GetLeanSymbol(atreyuOrder.Symbol, SecurityType.Equity, Market.USA);
-            var datetime = DateTime.ParseExact(atreyuOrder.TransactTime, "YYYYMMDD-hh:mm:ss.s", CultureInfo.InvariantCulture);
+            var datetime = DateTime.ParseExact(atreyuOrder.TransactTime, "yyyyMMdd-HH:mm:ss.fff", CultureInfo.InvariantCulture);
             switch (atreyuOrder.OrdType)
             {
-                case "1":
+                case "MARKET":
                     leanOrder = new MarketOrder(
                         symbol,
                         atreyuOrder.Quantity,
                         datetime);
                     break;
-                case "2":
+                case "LIMIT":
                     leanOrder = new LimitOrder(
                         symbol,
                         atreyuOrder.Quantity,
                         atreyuOrder.Price,
                         datetime);
                     break;
-                case "3":
+                case "STOP":
                     leanOrder = new StopMarketOrder(
                         symbol,
                         atreyuOrder.Quantity,
-                        atreyuOrder.StopPrice,
+                        atreyuOrder.StopPx,
                         datetime);
                     break;
-                case "4":
+                case "STOPLIMIT":
                     leanOrder = new StopLimitOrder(
                         symbol,
                         atreyuOrder.Quantity,
-                        atreyuOrder.StopPrice,
+                        atreyuOrder.StopPx,
                         atreyuOrder.Price,
                         datetime);
                     break;
-                case "5":
+                case "MARKETONCLOSE":
                     leanOrder = new MarketOnCloseOrder(
                         symbol,
                         atreyuOrder.Quantity,
@@ -72,9 +72,7 @@ namespace QuantConnect.Brokerages.Atreyu
             }
             leanOrder.BrokerId.Add(atreyuOrder.ClOrdID.ToStringInvariant());
             leanOrder.Properties.TimeInForce = ConvertTimeInForce(atreyuOrder.TimeInForce);
-
-            //TODO: setup proper status if possible
-            //leanOrder.Status = ConvertOrderStatus(atreyuOrder);
+            leanOrder.Status = ConvertOrderStatus(atreyuOrder);
 
             return leanOrder;
         }
@@ -88,7 +86,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 case "2":
                 case "3":
                     throw new ArgumentException($"AtreyuBrokerage.ConvertTimeInForce: Unsupported TimeInForce value returned from brokerage: {atreyuOrderTimeInForce}");
-                case "0":
+                case "DAY":
                 default:
                     return TimeInForce.Day;
             }
@@ -103,11 +101,10 @@ namespace QuantConnect.Brokerages.Atreyu
                 {
                     Symbol = _symbolMapper.GetLeanSymbol(position.Symbol, SecurityType.Crypto, Market.Bitfinex),
                     //AveragePrice = position.BasePrice,
+                    //MarketPrice = position.BasePrice,
                     Quantity = position.LongQty > 0 ? position.LongQty : position.ShortQty,
-                    //UnrealizedPnL = position.ProfitLoss,
                     CurrencySymbol = "$",
-                    // MarketPrice = ??,
-                    //Type = position.SecurityType
+                    Type = SecurityType.Equity
                 };
             }
             catch (Exception)
@@ -121,9 +118,9 @@ namespace QuantConnect.Brokerages.Atreyu
         {
             switch (atreyuOrder.OrdStatus)
             {
-                case "0": return OrderStatus.New;
+                case "NEW": return OrderStatus.Submitted;
                 case "1": return OrderStatus.PartiallyFilled;
-                case "2": return OrderStatus.Filled;
+                case "FILLED": return OrderStatus.Filled;
                 case "4": return OrderStatus.Canceled;
                 case "6": return OrderStatus.CancelPending;
                 case "A": return OrderStatus.Submitted;
@@ -138,6 +135,34 @@ namespace QuantConnect.Brokerages.Atreyu
                 // not sure how to map these guys
                 default:
                     throw new ArgumentException($"AtreyuBrokerage.ConvertOrderStatus: Unsupported order status returned from brokerage: {atreyuOrder.OrdStatus}");
+            }
+        }
+
+        private OrderStatus ConvertExecType(string execType)
+        {
+            switch (execType.ToUpperInvariant())
+            {
+                case "NEW": return OrderStatus.Submitted;
+                case "FILLED": return OrderStatus.Filled;
+                
+                case "REJECTED":
+                    return OrderStatus.Invalid;
+
+                default:
+                    throw new ArgumentException($"AtreyuBrokerage.ConvertOrderStatus: Unsupported order status returned from brokerage: {execType}");
+            }
+        }
+
+        private string ConvertDirection(OrderDirection direction)
+        {
+            switch (direction)
+            {
+                case OrderDirection.Buy:  return "1";
+                case OrderDirection.Sell: return "2";
+
+                // not sure how to map these guys
+                default:
+                    throw new ArgumentException($"AtreyuBrokerage.ConvertDirection: Unsupported order direction: {direction}");
             }
         }
     }

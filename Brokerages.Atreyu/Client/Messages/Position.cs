@@ -19,19 +19,17 @@ namespace QuantConnect.Brokerages.Atreyu.Client.Messages
 {
     public class Position
     {
-        [JsonProperty(PropertyName = "55", Required = Required.DisallowNull)]
         public string Symbol { get; set; }
-
-        [JsonProperty(PropertyName = "167", Required = Required.DisallowNull)]
+        
         public string SecurityType { get; set; }
 
-        //[JsonProperty(PropertyName = "703", Required = Required.DisallowNull)]
-        //public string 703 { get; set; }
+        // [JsonProperty(PropertyName = "703", Required = Required.DisallowNull)]
+        // (ETR - position as result of trading) and (SOD - position from the Start Of Day)
+        // https://quantconnect.slack.com/archives/G01G4CC5A2K/p1608571876012700
+        //public string PosType { get; set; } 
 
-        [JsonProperty(PropertyName = "704", Required = Required.DisallowNull)]
         public decimal LongQty { get; set; }
-
-        [JsonProperty(PropertyName = "705", Required = Required.DisallowNull)]
+        
         public decimal ShortQty { get; set; }
     }
 }

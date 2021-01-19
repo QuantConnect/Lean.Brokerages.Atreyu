@@ -17,13 +17,14 @@ using Newtonsoft.Json;
 
 namespace QuantConnect.Brokerages.Atreyu.Client.Messages
 {
-    public class ResponseMessage
+    public class ExecutionReport
     {
-        [JsonProperty(PropertyName = "status")]
-        public int Status { get; protected set; }
+        public string MsgType { get; set; }
 
-        public string Text { get; protected set; }
-        
-        public string SendingTime { get; set; }
+        public string ExecType { get; set; }
+
+        public string ClOrdID { get; set; }
+
+        public string TransactTime { get; set; }
     }
 }

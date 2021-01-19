@@ -69,38 +69,39 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override List<Order> GetOpenOrders()
         {
-            Log.Trace("AtreyuBrokerage.GetOpenOrders()");
-            var response = _zeroMQ.Send<QueryResultMessage<Client.Messages.Order>>(new QueryOpenOrdersMessage());
+            var response = _zeroMQ.Send<OpenOrdersResultMessage>(new QueryOpenOrdersMessage());
             if (response.Status != 0)
             {
                 throw new Exception($"AtreyuBrokerage.GetOpenOrders: request failed: [{(int)response.Status}] ErrorMessage: {response.Text}");
             }
 
-            if (response.Result?.Any() != true)
+            if (response.Orders?.Any() != true)
             {
                 return new List<Order>();
             }
 
-            return response.Result
+            var result = response.Orders
                 .Select(ConvertOrder)
                 .ToList();
+
+            return result;
         }
 
         public override List<Holding> GetAccountHoldings()
         {
             Log.Trace("AtreyuBrokerage.GetAccountHoldings()");
-            var response = _zeroMQ.Send<QueryResultMessage<Client.Messages.Position>>(new QueryPositionsMessage());
+            var response = _zeroMQ.Send<OpenPositionsResultMessage>(new QueryPositionsMessage());
             if (response.Status != 0)
             {
                 throw new Exception($"AtreyuBrokerage.GetAccountHoldings: request failed: [{(int)response.Status}] ErrorMessage: {response.Text}");
             }
 
-            if (response.Result?.Any() != true)
+            if (response.Positions?.Any() != true)
             {
                 return new List<Holding>();
             }
 
-            return response.Result
+            return response.Positions
                 .Select(ConvertHolding)
                 .ToList();
         }
@@ -114,71 +115,106 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override bool PlaceOrder(Order order)
         {
-            var response = _zeroMQ.Send<ResponseMessage>(new NewEquityOrderMessage()
+            if ((order.Quantity % 1) != 0)
             {
-                Side = "1",
-                Symbol = "GOOG",
-                ClOrdID = "goog1",
-                OrderQty = 0.5m,
-                Price = 1500,
-                DeliverToCompID = "CS",
+                throw new ArgumentException(
+                    $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: Quantity has to be an Integer, but sent {order.Quantity}");
+            }
+
+            var request = new NewEquityOrderMessage()
+            {
+                Side = ConvertDirection(order.Direction),
+                Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
+                ClOrdID = order.Id.ToString(),
+                OrderQty = (int)order.Quantity,
+                // DeliverToCompID = "CS", // exclude for testing purposes
                 ExDestination = "NSDQ",
                 ExecInst = "1",
-                OrdType = "2",
                 HandlInst = "1",
                 TransactTime = DateTime.UtcNow.ToString("yyyyMMdd-HH:mm:ss.fff")
-            });
+            };
 
-            if (response.Status != 0)
+            switch (order.Type)
             {
-                var message = $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
-                OnOrderEvent(new OrderEvent(
+                case OrderType.Market:
+                    request.OrdType = "1";
+                    break;
+                case OrderType.Limit:
+                    request.OrdType = "2";
+                    request.Price = (order as LimitOrder)?.LimitPrice ?? order.Price;
+                    break;
+                case OrderType.StopMarket:
+                    request.OrdType = "3";
+                    break;
+                case OrderType.StopLimit:
+                    request.OrdType = "4";
+                    break;
+                default:
+                    throw new NotSupportedException($"AtreyuBrokerage.ConvertOrderType: Unsupported order type: {order.Type}");
+            }
+
+            bool submitted = false;
+            WithLockedStream(() =>
+            {
+                var response = _zeroMQ.Send<ResponseMessage>(request);
+
+                if (response.Status != 0)
+                {
+                    var message =
+                        $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                    OnOrderEvent(new OrderEvent(
                         order,
                         DateTime.UtcNow,
                         OrderFee.Zero,
                         "Atreyu Order Event")
+                    {
+                        Status = OrderStatus.Invalid
+                    });
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
+                    submitted = false;
+                }
+                else
                 {
-                    Status = OrderStatus.Invalid
-                });
-                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
-            }
-            else
-            {
-                OnOrderEvent(new OrderEvent(
+                    order.BrokerId.Add(request.ClOrdID);
+                    OnOrderEvent(new OrderEvent(
                         order,
-                        Time.ParseDate(response.TransactTime),
+                        Time.ParseDate(response.SendingTime),
                         OrderFee.Zero,
                         "Atreyu Order Event")
-                {
-                    Status = OrderStatus.Submitted
-                });
-                Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
-            }
-
-            return true;
+                    {
+                        Status = OrderStatus.Submitted
+                    });
+                    Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
+                    submitted = true;
+                }
+            });
+            return submitted;
         }
 
         public override bool UpdateOrder(Order order)
         {
-            throw new NotImplementedException();
-        }
-
-        public override bool CancelOrder(Order order)
-        {
-            Log.Trace("AtreyuBrokerage.CancelOrder(): {0}", order);
-
-            if (!order.BrokerId.Any())
+            if (order.BrokerId.Count == 0)
             {
-                // we need the brokerage order id in order to perform a cancellation
-                Log.Trace("AtreyuBrokerage.CancelOrder(): Unable to cancel order without BrokerId.");
-                return false;
+                throw new ArgumentNullException(nameof(order.BrokerId), "AtreyuBrokerage.UpdateOrder: There is no brokerage id to be updated for this order.");
             }
 
-            var clOrdId = order.BrokerId.First();
-            var response = _zeroMQ.Send<ResponseMessage>(new CancelEquityOrderMessage()
+            if (order.BrokerId.Count > 1)
             {
-                ClOrdID = clOrdId,
-                OrigClOrdID = clOrdId,
+                throw new NotSupportedException("AtreyuBrokerage.UpdateOrder: Multiple orders update not supported. Please cancel and re-create.");
+            }
+
+            if ((order.Quantity % 1) != 0)
+            {
+                throw new ArgumentException(
+                    $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: Quantity has to be an Integer, but sent {order.Quantity}");
+            }
+
+            var response = _zeroMQ.Send<ResponseMessage>(new CancelReplaceEquityOrderMessage()
+            {
+                ClOrdID = Guid.NewGuid().ToString("N"),
+                OrderQty = 1,
+                Price = 1200,
+                OrigClOrdID = order.BrokerId.First(),
                 TransactTime = DateTime.UtcNow.ToString("yyyyMMdd-HH:mm:ss.fff")
             });
 
@@ -199,7 +235,54 @@ namespace QuantConnect.Brokerages.Atreyu
             {
                 OnOrderEvent(new OrderEvent(
                     order,
-                    Time.ParseDate(response.TransactTime),
+                    Time.ParseDate(response.SendingTime),
+                    OrderFee.Zero,
+                    "Atreyu Order Event")
+                {
+                    Status = OrderStatus.Submitted
+                });
+                Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
+            }
+
+            return true;
+        }
+
+        public override bool CancelOrder(Order order)
+        {
+            Log.Trace("AtreyuBrokerage.CancelOrder(): {0}", order);
+
+            if (!order.BrokerId.Any())
+            {
+                // we need the brokerage order id in order to perform a cancellation
+                Log.Trace("AtreyuBrokerage.CancelOrder(): Unable to cancel order without BrokerId.");
+                return false;
+            }
+
+            var response = _zeroMQ.Send<ResponseMessage>(new CancelEquityOrderMessage()
+            {
+                ClOrdID = Guid.NewGuid().ToString("N"),
+                OrigClOrdID = order.BrokerId.First(),
+                TransactTime = DateTime.UtcNow.ToString("yyyyMMdd-HH:mm:ss.fff")
+            });
+
+            if (response.Status != 0)
+            {
+                var message = $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                OnOrderEvent(new OrderEvent(
+                    order,
+                    DateTime.UtcNow,
+                    OrderFee.Zero,
+                    "Atreyu Order Event")
+                {
+                    Status = OrderStatus.Invalid
+                });
+                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
+            }
+            else
+            {
+                OnOrderEvent(new OrderEvent(
+                    order,
+                    Time.ParseDate(response.SendingTime),
                     OrderFee.Zero,
                     "Atreyu Order Event")
                 {

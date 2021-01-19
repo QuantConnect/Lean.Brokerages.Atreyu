@@ -13,14 +13,27 @@
  * limitations under the License.
 */
 
-using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace QuantConnect.Brokerages.Atreyu.Client.Messages
 {
-    public class QueryResultMessage<T> : ResponseMessage
+    public class CancelReplaceEquityOrderMessage : CancelEquityOrderMessage
     {
-        [JsonProperty(PropertyName = "73", Required = Required.DisallowNull)]
-        public IEnumerable<T> Result { get; set; }
+        public CancelReplaceEquityOrderMessage()
+        {
+            MsgType = "G";
+        }
+
+        [JsonProperty(PropertyName = "38", Required = Required.DisallowNull)]
+        public int OrderQty { get; set; }
+
+        [JsonProperty(PropertyName = "44")]
+        public decimal Price { get; set; }
+
+        [JsonProperty(PropertyName = "99")]
+        public decimal StopPx { get; set; }
+
+        [JsonProperty(PropertyName = "211")]
+        public decimal PegDifference { get; set; }
     }
 }

@@ -27,7 +27,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public string GetBrokerageSymbol(Symbol symbol)
         {
-            throw new NotImplementedException();
+            return symbol.Value;
         }
 
         public Symbol GetLeanSymbol(
