@@ -25,6 +25,8 @@ namespace QuantConnect.Brokerages.Atreyu.Client.Messages
 
         public string ClOrdID { get; set; }
 
+        public string OrigClOrdID { get; set; }
+
         public string TransactTime { get; set; }
     }
 }

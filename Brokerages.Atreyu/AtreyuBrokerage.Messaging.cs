@@ -57,7 +57,9 @@ namespace QuantConnect.Brokerages.Atreyu
                 {
                     case "REJECTED":
                     case "NEW":
-                    case "EXECUTED": 
+                    case "EXECUTED":
+                    case "PENDING_CANCEL":
+                    case "CANCELED":
                         OnExecution(report);
                         break;
                     case "FILL":
@@ -71,10 +73,10 @@ namespace QuantConnect.Brokerages.Atreyu
 
         private void OnExecution(ExecutionReport report)
         {
-            Orders.Order order = _orderProvider.GetOrderByBrokerageId(report.ClOrdID);
+            Orders.Order order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
             if (order != null)
             {
-                OnOrderEvent(new OrderEvent(order, Parse.DateTime(report.TransactTime), OrderFee.Zero, "Atreyu Order Event")
+                OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, "Atreyu Order Event")
                 {
                     Status = ConvertExecType(report.ExecType)
                 });
@@ -86,7 +88,7 @@ namespace QuantConnect.Brokerages.Atreyu
             Orders.Order order = _orderProvider.GetOrderByBrokerageId(report.ClOrdID);
             if (order != null)
             {
-                OnOrderEvent(new OrderEvent(order, Parse.DateTime(report.TransactTime), OrderFee.Zero, "Atreyu Order Event")
+                OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, "Atreyu Order Event")
                 {
                     Status = OrderStatus.Filled
                 });

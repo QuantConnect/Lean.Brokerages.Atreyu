@@ -29,7 +29,7 @@ namespace QuantConnect.Brokerages.Atreyu
             Order leanOrder;
 
             var symbol = _symbolMapper.GetLeanSymbol(atreyuOrder.Symbol, SecurityType.Equity, Market.USA);
-            var datetime = DateTime.ParseExact(atreyuOrder.TransactTime, "yyyyMMdd-HH:mm:ss.fff", CultureInfo.InvariantCulture);
+            var datetime = Time.ParseFIXUtcTimestamp(atreyuOrder.TransactTime);
             switch (atreyuOrder.OrdType)
             {
                 case "MARKET":
@@ -121,8 +121,8 @@ namespace QuantConnect.Brokerages.Atreyu
                 case "NEW": return OrderStatus.Submitted;
                 case "1": return OrderStatus.PartiallyFilled;
                 case "FILLED": return OrderStatus.Filled;
-                case "4": return OrderStatus.Canceled;
-                case "6": return OrderStatus.CancelPending;
+                case "CANCELED": return OrderStatus.Canceled;
+                case "PENDING_CANCEL": return OrderStatus.CancelPending;
                 case "A": return OrderStatus.Submitted;
                 case "E": return OrderStatus.UpdateSubmitted;
 
@@ -142,11 +142,11 @@ namespace QuantConnect.Brokerages.Atreyu
         {
             switch (execType.ToUpperInvariant())
             {
-                case "NEW": return OrderStatus.Submitted;
-                case "FILLED": return OrderStatus.Filled;
-                
-                case "REJECTED":
-                    return OrderStatus.Invalid;
+                case "NEW":            return OrderStatus.Submitted;
+                case "FILLED":         return OrderStatus.Filled;
+                case "PENDING_CANCEL": return OrderStatus.CancelPending;
+                case "CANCELED":       return OrderStatus.Canceled;
+                case "REJECTED":       return OrderStatus.Invalid;
 
                 default:
                     throw new ArgumentException($"AtreyuBrokerage.ConvertOrderStatus: Unsupported order status returned from brokerage: {execType}");
