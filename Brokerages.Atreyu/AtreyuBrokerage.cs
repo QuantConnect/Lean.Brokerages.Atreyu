@@ -17,6 +17,7 @@ using QuantConnect.Brokerages.Atreyu.Client.Messages;
 using QuantConnect.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -115,7 +116,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override bool PlaceOrder(Order order)
         {
-            if ((order.Quantity % 1) != 0)
+            if ((order.AbsoluteQuantity % 1) != 0)
             {
                 throw new ArgumentException(
                     $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: Quantity has to be an Integer, but sent {order.Quantity}");
@@ -126,12 +127,12 @@ namespace QuantConnect.Brokerages.Atreyu
                 Side = ConvertDirection(order.Direction),
                 Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
                 ClOrdID = order.Id.ToString(),
-                OrderQty = (int)order.Quantity,
+                OrderQty = (int)order.AbsoluteQuantity,
                 // DeliverToCompID = "CS", // exclude for testing purposes
                 ExDestination = "NSDQ",
                 ExecInst = "1",
                 HandlInst = "1",
-                TransactTime = DateTime.UtcNow.ToString("yyyyMMdd-HH:mm:ss.fff")
+                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond)
             };
 
             switch (order.Type)
@@ -144,9 +145,12 @@ namespace QuantConnect.Brokerages.Atreyu
                     request.Price = (order as LimitOrder)?.LimitPrice ?? order.Price;
                     break;
                 case OrderType.StopMarket:
+                    request.StopPx = (order as StopMarketOrder)?.StopPrice ?? order.Price;
                     request.OrdType = "3";
                     break;
                 case OrderType.StopLimit:
+                    request.Price = (order as StopLimitOrder)?.LimitPrice ?? order.Price;
+                    request.StopPx = (order as StopLimitOrder)?.StopPrice ?? order.Price;
                     request.OrdType = "4";
                     break;
                 default:
@@ -203,48 +207,69 @@ namespace QuantConnect.Brokerages.Atreyu
                 throw new NotSupportedException("AtreyuBrokerage.UpdateOrder: Multiple orders update not supported. Please cancel and re-create.");
             }
 
-            if ((order.Quantity % 1) != 0)
+            if ((order.AbsoluteQuantity % 1) != 0)
             {
                 throw new ArgumentException(
                     $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: Quantity has to be an Integer, but sent {order.Quantity}");
             }
 
-            var response = _zeroMQ.Send<ResponseMessage>(new CancelReplaceEquityOrderMessage()
+            var request = new CancelReplaceEquityOrderMessage()
             {
-                ClOrdID = Guid.NewGuid().ToString("N"),
-                OrderQty = 1,
-                Price = 1200,
+                ClOrdID = order.BrokerId.First(),
+                OrderQty = (int)order.AbsoluteQuantity,
                 OrigClOrdID = order.BrokerId.First(),
-                TransactTime = DateTime.UtcNow.ToString("yyyyMMdd-HH:mm:ss.fff")
+                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond)
+            };
+
+            switch (order.Type)
+            {
+                case OrderType.Limit:
+                    request.Price = (order as LimitOrder)?.LimitPrice ?? order.Price;
+                    break;
+                case OrderType.StopMarket:
+                    request.StopPx = (order as StopMarketOrder)?.StopPrice ?? order.Price;
+                    break;
+                case OrderType.StopLimit:
+                    request.Price = (order as StopLimitOrder)?.LimitPrice ?? order.Price;
+                    request.StopPx = (order as StopLimitOrder)?.StopPrice ?? order.Price;
+                    break;
+            }
+
+            bool submitted = false;
+            WithLockedStream(() =>
+            {
+                var response = _zeroMQ.Send<ResponseMessage>(request);
+
+                if (response.Status != 0)
+                {
+                    var message = $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                    OnOrderEvent(new OrderEvent(
+                        order,
+                        DateTime.UtcNow,
+                        OrderFee.Zero,
+                        "Atreyu Order Event")
+                    {
+                        Status = OrderStatus.Invalid
+                    });
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
+                }
+                else
+                {
+                    OnOrderEvent(new OrderEvent(
+                        order,
+                        Time.ParseFIXUtcTimestamp(response.SendingTime),
+                        OrderFee.Zero,
+                        "Atreyu Order Event")
+                    {
+                        Status = OrderStatus.UpdateSubmitted
+                    });
+                    Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
+
+                    submitted = true;
+                }
             });
 
-            if (response.Status != 0)
-            {
-                var message = $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
-                OnOrderEvent(new OrderEvent(
-                    order,
-                    DateTime.UtcNow,
-                    OrderFee.Zero,
-                    "Atreyu Order Event")
-                {
-                    Status = OrderStatus.Invalid
-                });
-                OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
-            }
-            else
-            {
-                OnOrderEvent(new OrderEvent(
-                    order,
-                    Time.ParseFIXUtcTimestamp(response.SendingTime),
-                    OrderFee.Zero,
-                    "Atreyu Order Event")
-                {
-                    Status = OrderStatus.Submitted
-                });
-                Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
-            }
-
-            return true;
+            return submitted;
         }
 
         public override bool CancelOrder(Order order)
@@ -263,7 +288,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 {
                     ClOrdID = order.BrokerId.First(),
                     OrigClOrdID = order.BrokerId.First(),
-                    TransactTime = DateTime.UtcNow.ToString("yyyyMMdd-HH:mm:ss.fff")
+                    TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond)
                 });
 
                 if (response.Status != 0)

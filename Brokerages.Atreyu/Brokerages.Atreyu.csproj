@@ -88,6 +88,8 @@
     <Compile Include="AtreyuSymbolMapper.cs" />
     <Compile Include="Client\Messages\CancelReplaceEquityOrderMessage.cs" />
     <Compile Include="Client\Messages\CancelOptionOrderMessage.cs" />
+    <Compile Include="Client\Messages\Heartbeat.cs" />
+    <Compile Include="Client\Messages\FillOrderReport.cs" />
     <Compile Include="Client\Messages\LogonResponseMessage.cs" />
     <Compile Include="Client\Messages\LogonMessage.cs" />
     <Compile Include="Client\Messages\CancelEquityOrderMessage.cs" />
@@ -104,6 +106,7 @@
     <Compile Include="Client\Messages\RequestMessage.cs" />
     <Compile Include="Client\Messages\ResponseMessage.cs" />
     <Compile Include="Client\Messages\SignedMessage.cs" />
+    <Compile Include="Client\ExecutionReportJsonConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Client\ZeroMQConnectionManager.cs" />
   </ItemGroup>

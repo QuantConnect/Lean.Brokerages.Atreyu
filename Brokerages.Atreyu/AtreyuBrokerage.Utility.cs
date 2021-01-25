@@ -114,17 +114,26 @@ namespace QuantConnect.Brokerages.Atreyu
             }
         }
 
-        private OrderStatus ConvertOrderStatus(Client.Messages.Order atreyuOrder)
+        private OrderStatus ConvertOrderStatus(Client.Messages.Order atreyuOrder) =>
+            ConvertOrderStatus(atreyuOrder.OrdStatus);
+
+        private OrderStatus ConvertOrderStatus(string atreyuOrderStatus)
         {
-            switch (atreyuOrder.OrdStatus)
+            switch (atreyuOrderStatus)
             {
-                case "NEW": return OrderStatus.Submitted;
-                case "1": return OrderStatus.PartiallyFilled;
-                case "FILLED": return OrderStatus.Filled;
-                case "CANCELED": return OrderStatus.Canceled;
-                case "PENDING_CANCEL": return OrderStatus.CancelPending;
-                case "A": return OrderStatus.Submitted;
-                case "E": return OrderStatus.UpdateSubmitted;
+                case "NEW":
+                    return OrderStatus.Submitted;
+                case "PARTIALLY_FILLED":
+                    return OrderStatus.PartiallyFilled;
+                case "FILLED":
+                    return OrderStatus.Filled;
+                case "CANCELED":
+                    return OrderStatus.Canceled;
+                case "PENDING_CANCEL":
+                    return OrderStatus.CancelPending;
+                case "PENDING_REPLACE":
+                case "REPLACED":
+                    return OrderStatus.UpdateSubmitted;
 
                 case "7":
                 case "8":
@@ -134,7 +143,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
                 // not sure how to map these guys
                 default:
-                    throw new ArgumentException($"AtreyuBrokerage.ConvertOrderStatus: Unsupported order status returned from brokerage: {atreyuOrder.OrdStatus}");
+                    throw new ArgumentException($"AtreyuBrokerage.ConvertOrderStatus: Unsupported order status returned from brokerage: {atreyuOrderStatus}");
             }
         }
 
@@ -142,11 +151,21 @@ namespace QuantConnect.Brokerages.Atreyu
         {
             switch (execType.ToUpperInvariant())
             {
-                case "NEW":            return OrderStatus.Submitted;
-                case "FILLED":         return OrderStatus.Filled;
-                case "PENDING_CANCEL": return OrderStatus.CancelPending;
-                case "CANCELED":       return OrderStatus.Canceled;
-                case "REJECTED":       return OrderStatus.Invalid;
+                case "NEW":
+                    return OrderStatus.Submitted;
+                case "PARTIAL_FILL":
+                    return OrderStatus.PartiallyFilled;
+                case "FILL":
+                    return OrderStatus.Filled;
+                case "PENDING_CANCEL":
+                    return OrderStatus.CancelPending;
+                case "PENDING_REPLACE":
+                case "REPLACE":
+                    return OrderStatus.UpdateSubmitted;
+                case "CANCELED":
+                    return OrderStatus.Canceled;
+                case "REJECTED":
+                    return OrderStatus.Invalid;
 
                 default:
                     throw new ArgumentException($"AtreyuBrokerage.ConvertOrderStatus: Unsupported order status returned from brokerage: {execType}");
@@ -157,7 +176,7 @@ namespace QuantConnect.Brokerages.Atreyu
         {
             switch (direction)
             {
-                case OrderDirection.Buy:  return "1";
+                case OrderDirection.Buy: return "1";
                 case OrderDirection.Sell: return "2";
 
                 // not sure how to map these guys

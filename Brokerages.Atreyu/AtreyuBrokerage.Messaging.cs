@@ -13,14 +13,16 @@
  * limitations under the License.
 */
 
-using System;
-using System.Collections.Concurrent;
-using System.Linq;
 using Newtonsoft.Json;
 using QuantConnect.Brokerages.Atreyu.Client.Messages;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
+using System;
+using System.CodeDom;
+using System.Collections.Concurrent;
+using System.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace QuantConnect.Brokerages.Atreyu
 {
@@ -31,8 +33,21 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public void OnMessage(string message)
         {
+            JObject token = JObject.Parse(message);
+            var msgType = token.GetValue("MsgType", StringComparison.OrdinalIgnoreCase)?.Value<string>();
+            if (string.IsNullOrEmpty(msgType))
+            {
+                throw new ArgumentException("Message type is not specified.");
+            }
+
+            if (msgType.Equals("Heartbeat", StringComparison.OrdinalIgnoreCase))
+            {
+                Log.Trace(message);
+                return;
+            }
+
             Log.Trace(message);
-            ExecutionReport report = JsonConvert.DeserializeObject<ExecutionReport>(message);
+            ExecutionReport report = token.ToObject<ExecutionReport>();
             try
             {
                 if (_streamLocked)
@@ -53,17 +68,13 @@ namespace QuantConnect.Brokerages.Atreyu
         {
             if (report.MsgType.Equals("ExecutionReport"))
             {
-                switch (report.ExecType.ToUpper())
+                switch (report)
                 {
-                    case "REJECTED":
-                    case "NEW":
-                    case "EXECUTED":
-                    case "PENDING_CANCEL":
-                    case "CANCELED":
-                        OnExecution(report);
+                    case FillOrderReport fill:
+                        OnOrderFill(fill);
                         break;
-                    case "FILL":
-                        OnOrderFill(report);
+                    case ExecutionReport execution:
+                        OnExecution(execution);
                         break;
                     default:
                         throw new InvalidOperationException($"AtreyuBrokerage: execution type is not supported; received {report.ExecType}");
@@ -85,13 +96,39 @@ namespace QuantConnect.Brokerages.Atreyu
 
         private void OnOrderFill(ExecutionReport report)
         {
-            Orders.Order order = _orderProvider.GetOrderByBrokerageId(report.ClOrdID);
-            if (order != null)
+            Orders.Order order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID);
+            var fillingReport = report as FillOrderReport;
+            if (fillingReport == null)
             {
-                OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, "Atreyu Order Event")
+                throw new ArgumentException($"Received unexpected filling report format. Content: {JsonConvert.SerializeObject(report)}");
+            }
+
+            try
+            {
+                if (order == null)
                 {
-                    Status = OrderStatus.Filled
-                });
+                    // not our order, nothing else to do here
+                    return;
+                }
+
+                var fillPrice = fillingReport.LastPx;
+                var fillQuantity = order.Direction == OrderDirection.Sell ? -fillingReport.LastShares : fillingReport.LastShares;
+                var updTime = Time.ParseFIXUtcTimestamp(fillingReport.TransactTime);
+                var orderFee = OrderFee.Zero;
+                var status = ConvertOrderStatus(fillingReport.OrdStatus);
+                var orderEvent = new OrderEvent
+                (
+                    order.Id, order.Symbol, updTime, status,
+                    order.Direction, fillPrice, fillQuantity,
+                    orderFee, $"Atreyu Order Event {order.Direction}"
+                );
+
+                OnOrderEvent(orderEvent);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e);
+                throw;
             }
         }
 

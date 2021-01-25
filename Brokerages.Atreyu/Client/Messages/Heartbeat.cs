@@ -17,17 +17,8 @@ using Newtonsoft.Json;
 
 namespace QuantConnect.Brokerages.Atreyu.Client.Messages
 {
-    [JsonConverter(typeof(ExecutionReportJsonConverter))]
-    public class ExecutionReport: ResponseMessage
+    public class Heartbeat: ResponseMessage
     {
         public string MsgType { get; set; }
-
-        public string ExecType { get; set; }
-
-        public string ClOrdID { get; set; }
-
-        public string OrigClOrdID { get; set; }
-
-        public string TransactTime { get; set; }
     }
 }

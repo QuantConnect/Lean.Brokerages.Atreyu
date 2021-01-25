@@ -27,13 +27,13 @@ namespace QuantConnect.Brokerages.Atreyu.Client.Messages
         [JsonProperty(PropertyName = "38", Required = Required.DisallowNull)]
         public int OrderQty { get; set; }
 
-        [JsonProperty(PropertyName = "44")]
-        public decimal Price { get; set; }
+        [JsonProperty(PropertyName = "44", NullValueHandling = NullValueHandling.Ignore)]
+        public decimal? Price { get; set; }
 
-        [JsonProperty(PropertyName = "99")]
-        public decimal StopPx { get; set; }
+        [JsonProperty(PropertyName = "99", NullValueHandling = NullValueHandling.Ignore)]
+        public decimal? StopPx { get; set; }
 
-        [JsonProperty(PropertyName = "211")]
-        public decimal PegDifference { get; set; }
+        //[JsonProperty(PropertyName = "211")]
+        //public decimal PegDifference { get; set; }
     }
 }
