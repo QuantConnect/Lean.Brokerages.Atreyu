@@ -129,7 +129,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
                 ClOrdID = order.Id.ToString(),
                 OrderQty = (int)order.AbsoluteQuantity,
-                TimeInForce = ConvertTimeInForce(order.TimeInForce),
+                // TimeInForce = ConvertTimeInForce(order.TimeInForce),
                 // DeliverToCompID = "CS", // exclude for testing purposes
                 ExDestination = "NSDQ",
                 ExecInst = "1",
