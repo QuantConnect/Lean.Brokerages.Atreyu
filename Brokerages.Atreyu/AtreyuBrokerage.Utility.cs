@@ -146,6 +146,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 case "3":
                 case "7":
                 case "8":
+                case "REJECTED":
                 case "9":
                 case "C":
                     return OrderStatus.Invalid;
