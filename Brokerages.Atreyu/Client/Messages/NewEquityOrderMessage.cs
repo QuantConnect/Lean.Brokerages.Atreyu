@@ -39,6 +39,9 @@ namespace QuantConnect.Brokerages.Atreyu.Client.Messages
         [JsonProperty(PropertyName = "44")]
         public decimal Price { get; set; }
 
+        [JsonProperty(PropertyName = "59")]
+        public string TimeInForce { get; set; }
+
         [JsonProperty(PropertyName = "99")]
         public decimal StopPx { get; set; }
 

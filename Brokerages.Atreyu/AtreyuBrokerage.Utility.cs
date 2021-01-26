@@ -19,6 +19,7 @@ using System.ComponentModel;
 using System.Globalization;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
+using QuantConnect.Orders.TimeInForces;
 
 namespace QuantConnect.Brokerages.Atreyu
 {
@@ -67,13 +68,28 @@ namespace QuantConnect.Brokerages.Atreyu
             switch (atreyuOrderTimeInForce)
             {
                 case "1":
+                case "GTC":
                     return TimeInForce.GoodTilCanceled;
                 case "2":
                 case "3":
                     throw new ArgumentException($"AtreyuBrokerage.ConvertTimeInForce: Unsupported TimeInForce value returned from brokerage: {atreyuOrderTimeInForce}");
+                case "0":
                 case "DAY":
                 default:
                     return TimeInForce.Day;
+            }
+        }
+
+        private string ConvertTimeInForce(TimeInForce timeInForce)
+        {
+            switch (timeInForce)
+            {
+                case DayTimeInForce day:
+                    return "0";
+                case GoodTilCanceledTimeInForce gtc:
+                    return "1";
+                default:
+                    throw new ArgumentException("AtreyuBrokerage.ConvertTimeInForce: Unsupported TimeInForce");
             }
         }
 

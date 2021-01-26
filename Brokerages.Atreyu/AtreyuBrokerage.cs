@@ -18,6 +18,7 @@ using QuantConnect.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -128,11 +129,12 @@ namespace QuantConnect.Brokerages.Atreyu
                 Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
                 ClOrdID = order.Id.ToString(),
                 OrderQty = (int)order.AbsoluteQuantity,
+                TimeInForce = ConvertTimeInForce(order.TimeInForce),
                 // DeliverToCompID = "CS", // exclude for testing purposes
                 ExDestination = "NSDQ",
                 ExecInst = "1",
                 HandlInst = "1",
-                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond)
+                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
             };
 
             switch (order.Type)
