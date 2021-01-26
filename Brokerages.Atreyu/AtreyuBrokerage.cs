@@ -144,14 +144,8 @@ namespace QuantConnect.Brokerages.Atreyu
                     request.OrdType = "2";
                     request.Price = (order as LimitOrder)?.LimitPrice ?? order.Price;
                     break;
-                case OrderType.StopMarket:
-                    request.StopPx = (order as StopMarketOrder)?.StopPrice ?? order.Price;
-                    request.OrdType = "3";
-                    break;
-                case OrderType.StopLimit:
-                    request.Price = (order as StopLimitOrder)?.LimitPrice ?? order.Price;
-                    request.StopPx = (order as StopLimitOrder)?.StopPrice ?? order.Price;
-                    request.OrdType = "4";
+                case OrderType.MarketOnClose:
+                    request.OrdType = "5";
                     break;
                 default:
                     throw new NotSupportedException($"AtreyuBrokerage.ConvertOrderType: Unsupported order type: {order.Type}");
@@ -221,18 +215,9 @@ namespace QuantConnect.Brokerages.Atreyu
                 TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond)
             };
 
-            switch (order.Type)
-            {
-                case OrderType.Limit:
-                    request.Price = (order as LimitOrder)?.LimitPrice ?? order.Price;
-                    break;
-                case OrderType.StopMarket:
-                    request.StopPx = (order as StopMarketOrder)?.StopPrice ?? order.Price;
-                    break;
-                case OrderType.StopLimit:
-                    request.Price = (order as StopLimitOrder)?.LimitPrice ?? order.Price;
-                    request.StopPx = (order as StopLimitOrder)?.StopPrice ?? order.Price;
-                    break;
+            if (order.Type == OrderType.Limit)
+            { 
+                request.Price = (order as LimitOrder)?.LimitPrice ?? order.Price;
             }
 
             bool submitted = false;

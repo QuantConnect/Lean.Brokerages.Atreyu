@@ -45,21 +45,6 @@ namespace QuantConnect.Brokerages.Atreyu
                         atreyuOrder.Price,
                         datetime);
                     break;
-                case "STOP":
-                    leanOrder = new StopMarketOrder(
-                        symbol,
-                        atreyuOrder.Quantity,
-                        atreyuOrder.StopPx,
-                        datetime);
-                    break;
-                case "STOPLIMIT":
-                    leanOrder = new StopLimitOrder(
-                        symbol,
-                        atreyuOrder.Quantity,
-                        atreyuOrder.StopPx,
-                        atreyuOrder.Price,
-                        datetime);
-                    break;
                 case "MARKETONCLOSE":
                     leanOrder = new MarketOnCloseOrder(
                         symbol,
