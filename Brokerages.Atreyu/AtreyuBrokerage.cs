@@ -214,7 +214,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 ClOrdID = order.BrokerId.First(),
                 OrderQty = (int)order.AbsoluteQuantity,
                 OrigClOrdID = order.BrokerId.First(),
-                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond)
+                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
             };
 
             if (order.Type == OrderType.Limit)
@@ -275,7 +275,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 {
                     ClOrdID = order.BrokerId.First(),
                     OrigClOrdID = order.BrokerId.First(),
-                    TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond)
+                    TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
                 });
 
                 if (response.Status != 0)

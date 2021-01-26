@@ -122,20 +122,28 @@ namespace QuantConnect.Brokerages.Atreyu
         {
             switch (atreyuOrderStatus)
             {
+                case "0":
                 case "NEW":
                     return OrderStatus.Submitted;
+                case "1":
                 case "PARTIALLY_FILLED":
                     return OrderStatus.PartiallyFilled;
+                case "2":
                 case "FILLED":
                     return OrderStatus.Filled;
+                case "4":
                 case "CANCELED":
                     return OrderStatus.Canceled;
+                case "6":
                 case "PENDING_CANCEL":
                     return OrderStatus.CancelPending;
+                case "5":
+                case "E":
                 case "PENDING_REPLACE":
                 case "REPLACED":
                     return OrderStatus.UpdateSubmitted;
 
+                case "3":
                 case "7":
                 case "8":
                 case "9":
