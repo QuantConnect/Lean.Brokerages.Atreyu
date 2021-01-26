@@ -158,16 +158,14 @@ namespace QuantConnect.Brokerages.Atreyu
             bool submitted = false;
             WithLockedStream(() =>
             {
-                var content = _zeroMQ.Send(request);
+                var response = _zeroMQ.Send<SubmitResponseMessage>(request);
 
-                var jtoken = JObject.Parse(content);
-                if (jtoken.GetValue("status", StringComparison.OrdinalIgnoreCase)?.Value<int>() == 0)
+                if (response.Status == 0)
                 {
-                    var execution = jtoken.ToObject<SubmitResponseMessage>();
-                    order.BrokerId.Add(execution.ClOrdID);
+                    order.BrokerId.Add(response.ClOrdID);
                     OnOrderEvent(new OrderEvent(
                         order,
-                        Time.ParseFIXUtcTimestamp(execution.TransactTime),
+                        Time.ParseFIXUtcTimestamp(response.TransactTime),
                         OrderFee.Zero,
                         "Atreyu Order Event")
                     {
@@ -178,7 +176,6 @@ namespace QuantConnect.Brokerages.Atreyu
                 }
                 else
                 {
-                    var response = jtoken.ToObject<ResponseMessage>();
                     var message =
                         $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
                     OnOrderEvent(new OrderEvent(
@@ -229,15 +226,13 @@ namespace QuantConnect.Brokerages.Atreyu
             bool submitted = false;
             WithLockedStream(() =>
             {
-                var content = _zeroMQ.Send(request);
+                var response = _zeroMQ.Send<SubmitResponseMessage>(request);
 
-                var jtoken = JObject.Parse(content);
-                if (jtoken.GetValue("status", StringComparison.OrdinalIgnoreCase)?.Value<int>() == 0)
+                if (response.Status == 0)
                 {
-                    var execution = jtoken.ToObject<SubmitResponseMessage>();
                     OnOrderEvent(new OrderEvent(
                         order,
-                        Time.ParseFIXUtcTimestamp(execution.TransactTime),
+                        Time.ParseFIXUtcTimestamp(response.TransactTime),
                         OrderFee.Zero,
                         "Atreyu Order Event")
                     {
@@ -249,7 +244,6 @@ namespace QuantConnect.Brokerages.Atreyu
                 }
                 else
                 {
-                    var response = jtoken.ToObject<ResponseMessage>();
                     var message = $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
                     OnOrderEvent(new OrderEvent(
                         order,
@@ -278,20 +272,18 @@ namespace QuantConnect.Brokerages.Atreyu
             bool submitted = false;
             WithLockedStream(() =>
             {
-                var content = _zeroMQ.Send(new CancelEquityOrderMessage()
+                var response = _zeroMQ.Send<SubmitResponseMessage>(new CancelEquityOrderMessage()
                 {
                     ClOrdID = order.BrokerId.First(),
                     OrigClOrdID = order.BrokerId.First(),
                     TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
                 });
 
-                var jtoken = JObject.Parse(content);
-                if (jtoken.GetValue("status", StringComparison.OrdinalIgnoreCase)?.Value<int>() == 0)
+                if (response.Status == 0)
                 {
-                    var execution = jtoken.ToObject<SubmitResponseMessage>();
                     OnOrderEvent(new OrderEvent(
                         order,
-                        Time.ParseFIXUtcTimestamp(execution.SendingTime),
+                        Time.ParseFIXUtcTimestamp(response.TransactTime),
                         OrderFee.Zero,
                         "Atreyu Order Event")
                     {
@@ -302,7 +294,6 @@ namespace QuantConnect.Brokerages.Atreyu
                 }
                 else
                 {
-                    var response = jtoken.ToObject<ResponseMessage>();
                     var message =
                         $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
                     OnOrderEvent(new OrderEvent(
