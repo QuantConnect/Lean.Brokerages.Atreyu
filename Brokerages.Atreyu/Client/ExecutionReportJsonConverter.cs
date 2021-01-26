@@ -44,14 +44,21 @@ namespace QuantConnect.Brokerages.Atreyu
                 throw new ArgumentException("Execution report type is not specified.");
             }
 
+            ExecutionReport report;
             switch (execType)
             {
                 case "PARTIAL_FILL":
                 case "FILL":
-                    return token.ToObject<FillOrderReport>();
+                    report = new FillOrderReport();
+                    break;
                 default:
-                    return token.ToObject<ExecutionReport>();
+                    report = new ExecutionReport();
+                    break;
+
             }
+
+            serializer?.Populate(token.CreateReader(), report);
+            return report;
         }
 
         public override bool CanConvert(Type objectType)

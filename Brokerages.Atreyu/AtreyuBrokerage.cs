@@ -22,6 +22,8 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using QuantConnect.Data;
 using QuantConnect.Interfaces;
 using QuantConnect.Logging;
@@ -156,29 +158,16 @@ namespace QuantConnect.Brokerages.Atreyu
             bool submitted = false;
             WithLockedStream(() =>
             {
-                var response = _zeroMQ.Send<ResponseMessage>(request);
+                var content = _zeroMQ.Send(request);
 
-                if (response.Status != 0)
+                var jtoken = JObject.Parse(content);
+                if (jtoken.GetValue("status", StringComparison.OrdinalIgnoreCase)?.Value<int>() == 0)
                 {
-                    var message =
-                        $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                    var execution = jtoken.ToObject<SubmitResponseMessage>();
+                    order.BrokerId.Add(execution.ClOrdID);
                     OnOrderEvent(new OrderEvent(
                         order,
-                        DateTime.UtcNow,
-                        OrderFee.Zero,
-                        "Atreyu Order Event")
-                    {
-                        Status = OrderStatus.Invalid
-                    });
-                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
-                    submitted = false;
-                }
-                else
-                {
-                    order.BrokerId.Add(request.ClOrdID);
-                    OnOrderEvent(new OrderEvent(
-                        order,
-                        Time.ParseFIXUtcTimestamp(response.SendingTime),
+                        Time.ParseFIXUtcTimestamp(execution.TransactTime),
                         OrderFee.Zero,
                         "Atreyu Order Event")
                     {
@@ -186,6 +175,21 @@ namespace QuantConnect.Brokerages.Atreyu
                     });
                     Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
                     submitted = true;
+                }
+                else
+                {
+                    var response = jtoken.ToObject<ResponseMessage>();
+                    var message =
+                        $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                    OnOrderEvent(new OrderEvent(
+                        order,
+                        Time.ParseFIXUtcTimestamp(response.SendingTime),
+                        OrderFee.Zero,
+                        "Atreyu Order Event")
+                    {
+                        Status = OrderStatus.Invalid
+                    });
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
                 }
             });
             return submitted;
@@ -218,33 +222,22 @@ namespace QuantConnect.Brokerages.Atreyu
             };
 
             if (order.Type == OrderType.Limit)
-            { 
+            {
                 request.Price = (order as LimitOrder)?.LimitPrice ?? order.Price;
             }
 
             bool submitted = false;
             WithLockedStream(() =>
             {
-                var response = _zeroMQ.Send<ResponseMessage>(request);
+                var content = _zeroMQ.Send(request);
 
-                if (response.Status != 0)
+                var jtoken = JObject.Parse(content);
+                if (jtoken.GetValue("status", StringComparison.OrdinalIgnoreCase)?.Value<int>() == 0)
                 {
-                    var message = $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                    var execution = jtoken.ToObject<SubmitResponseMessage>();
                     OnOrderEvent(new OrderEvent(
                         order,
-                        DateTime.UtcNow,
-                        OrderFee.Zero,
-                        "Atreyu Order Event")
-                    {
-                        Status = OrderStatus.Invalid
-                    });
-                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
-                }
-                else
-                {
-                    OnOrderEvent(new OrderEvent(
-                        order,
-                        Time.ParseFIXUtcTimestamp(response.SendingTime),
+                        Time.ParseFIXUtcTimestamp(execution.TransactTime),
                         OrderFee.Zero,
                         "Atreyu Order Event")
                     {
@@ -253,6 +246,20 @@ namespace QuantConnect.Brokerages.Atreyu
                     Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
 
                     submitted = true;
+                }
+                else
+                {
+                    var response = jtoken.ToObject<ResponseMessage>();
+                    var message = $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                    OnOrderEvent(new OrderEvent(
+                        order,
+                        Time.ParseFIXUtcTimestamp(response.SendingTime),
+                        OrderFee.Zero,
+                        "Atreyu Order Event")
+                    {
+                        Status = OrderStatus.Invalid
+                    });
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
                 }
             });
 
@@ -271,32 +278,20 @@ namespace QuantConnect.Brokerages.Atreyu
             bool submitted = false;
             WithLockedStream(() =>
             {
-                var response = _zeroMQ.Send<ResponseMessage>(new CancelEquityOrderMessage()
+                var content = _zeroMQ.Send(new CancelEquityOrderMessage()
                 {
                     ClOrdID = order.BrokerId.First(),
                     OrigClOrdID = order.BrokerId.First(),
                     TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
                 });
 
-                if (response.Status != 0)
+                var jtoken = JObject.Parse(content);
+                if (jtoken.GetValue("status", StringComparison.OrdinalIgnoreCase)?.Value<int>() == 0)
                 {
-                    var message =
-                        $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                    var execution = jtoken.ToObject<SubmitResponseMessage>();
                     OnOrderEvent(new OrderEvent(
                         order,
-                        DateTime.UtcNow,
-                        OrderFee.Zero,
-                        "Atreyu Order Event")
-                    {
-                        Status = OrderStatus.Invalid
-                    });
-                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
-                }
-                else
-                {
-                    OnOrderEvent(new OrderEvent(
-                        order,
-                        Time.ParseFIXUtcTimestamp(response.SendingTime),
+                        Time.ParseFIXUtcTimestamp(execution.SendingTime),
                         OrderFee.Zero,
                         "Atreyu Order Event")
                     {
@@ -304,6 +299,21 @@ namespace QuantConnect.Brokerages.Atreyu
                     });
                     Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
                     submitted = true;
+                }
+                else
+                {
+                    var response = jtoken.ToObject<ResponseMessage>();
+                    var message =
+                        $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: {response.Text}";
+                    OnOrderEvent(new OrderEvent(
+                        order,
+                        Time.ParseFIXUtcTimestamp(response.SendingTime),
+                        OrderFee.Zero,
+                        "Atreyu Order Event")
+                    {
+                        Status = OrderStatus.Invalid
+                    });
+                    OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
                 }
             });
             return submitted;

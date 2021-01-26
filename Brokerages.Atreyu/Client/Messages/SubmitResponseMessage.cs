@@ -13,17 +13,12 @@
  * limitations under the License.
 */
 
-using Newtonsoft.Json;
-
 namespace QuantConnect.Brokerages.Atreyu.Client.Messages
 {
-    public class ResponseMessage
+    public class SubmitResponseMessage: ResponseMessage
     {
-        [JsonProperty(PropertyName = "status")]
-        public int Status { get; set; }
-
-        public string Text { get; set; }
+        public string ClOrdID { get; set; }
         
-        public string SendingTime { get; set; }
+        public string TransactTime { get; set; }
     }
 }

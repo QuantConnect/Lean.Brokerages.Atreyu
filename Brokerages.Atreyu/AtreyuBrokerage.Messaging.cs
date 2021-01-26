@@ -40,13 +40,13 @@ namespace QuantConnect.Brokerages.Atreyu
                 throw new ArgumentException("Message type is not specified.");
             }
 
-            if (msgType.Equals("Heartbeat", StringComparison.OrdinalIgnoreCase))
+            Log.Trace(message);
+
+            if (!token.TryGetValue("ExecType", StringComparison.OrdinalIgnoreCase, out _))
             {
-                Log.Trace(message);
                 return;
             }
 
-            Log.Trace(message);
             ExecutionReport report = token.ToObject<ExecutionReport>();
             try
             {
@@ -66,20 +66,19 @@ namespace QuantConnect.Brokerages.Atreyu
 
         private void OnMessageImpl(ExecutionReport report)
         {
-            if (report.MsgType.Equals("ExecutionReport"))
+
+            switch (report)
             {
-                switch (report)
-                {
-                    case FillOrderReport fill:
-                        OnOrderFill(fill);
-                        break;
-                    case ExecutionReport execution:
-                        OnExecution(execution);
-                        break;
-                    default:
-                        throw new InvalidOperationException($"AtreyuBrokerage: execution type is not supported; received {report.ExecType}");
-                }
+                case FillOrderReport fill:
+                    OnOrderFill(fill);
+                    break;
+                case ExecutionReport execution:
+                    OnExecution(execution);
+                    break;
+                default:
+                    throw new InvalidOperationException($"AtreyuBrokerage: execution type is not supported; received {report.ExecType}");
             }
+
         }
 
         private void OnExecution(ExecutionReport report)
@@ -87,7 +86,7 @@ namespace QuantConnect.Brokerages.Atreyu
             Orders.Order order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
             if (order != null)
             {
-                OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, "Atreyu Order Event")
+                OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, $"Atreyu Order Event. Message: {report.Text}")
                 {
                     Status = ConvertExecType(report.ExecType)
                 });
