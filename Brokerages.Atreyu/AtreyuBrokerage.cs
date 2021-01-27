@@ -238,7 +238,7 @@ namespace QuantConnect.Brokerages.Atreyu
                     {
                         Status = OrderStatus.UpdateSubmitted
                     });
-                    Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
+                    Log.Trace($"Replace submitted successfully - OrderId: {order.Id}");
 
                     submitted = true;
                 }
@@ -289,7 +289,7 @@ namespace QuantConnect.Brokerages.Atreyu
                     {
                         Status = OrderStatus.CancelPending
                     });
-                    Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
+                    Log.Trace($"Cancel submitted successfully - OrderId: {order.Id}");
                     submitted = true;
                 }
                 else
