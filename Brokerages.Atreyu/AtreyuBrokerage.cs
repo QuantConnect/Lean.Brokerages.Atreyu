@@ -287,7 +287,7 @@ namespace QuantConnect.Brokerages.Atreyu
                         OrderFee.Zero,
                         "Atreyu Order Event")
                     {
-                        Status = OrderStatus.Canceled
+                        Status = OrderStatus.CancelPending
                     });
                     Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
                     submitted = true;
