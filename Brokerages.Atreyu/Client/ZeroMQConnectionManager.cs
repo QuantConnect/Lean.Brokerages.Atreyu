@@ -13,15 +13,15 @@
  * limitations under the License.
 */
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
 using QuantConnect.Brokerages.Atreyu.Client.Messages;
 using QuantConnect.Logging;
 using QuantConnect.Util;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace QuantConnect.Brokerages.Atreyu
 {
@@ -34,6 +34,8 @@ namespace QuantConnect.Brokerages.Atreyu
         private readonly string _host;
         private readonly int _reqPort;
         private readonly int _subPort;
+        private readonly string _username;
+        private readonly string _password;
 
         private bool _connected;
         private string _sessionId;
@@ -42,7 +44,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public bool IsConnected => _connected;
 
-        public ZeroMQConnectionManager(string host, int reqPort, int subPort)
+        public ZeroMQConnectionManager(string host, int reqPort, int subPort, string username, string password)
         {
             _subscribeSocket = new SubscriberSocket();
             _cancellationTokenSource = new CancellationTokenSource();
@@ -50,6 +52,8 @@ namespace QuantConnect.Brokerages.Atreyu
             _host = host;
             _reqPort = reqPort;
             _subPort = subPort;
+            _username = username;
+            _password = password;
         }
 
         public void Connect()
@@ -72,7 +76,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 Log.Trace($"ZeroMQConnectionManager: stopped polling messages");
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
-            var response = Send<LogonResponseMessage>(new LogonMessage());
+            var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password));
             if (response.Status != 0)
             {
                 throw new Exception("AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate.");

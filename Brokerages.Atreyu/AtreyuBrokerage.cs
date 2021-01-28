@@ -64,7 +64,7 @@ namespace QuantConnect.Brokerages.Atreyu
             _algorithm = algorithm;
             _orderProvider = algorithm.Transactions;
 
-            _zeroMQ = new ZeroMQConnectionManager(host, reqPort, subPort);
+            _zeroMQ = new ZeroMQConnectionManager(host, reqPort, subPort, username, password);
             _zeroMQ.MessageRecieved += (s, e) => OnMessage(e);
         }
 

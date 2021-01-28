@@ -24,10 +24,16 @@ namespace QuantConnect.Brokerages.Atreyu.Client.Messages
             MsgType = "A";
         }
 
+        public LogonMessage(string username, string password): this()
+        {
+            Username = username;
+            Password = password;
+        }
+
         [JsonProperty(PropertyName = "553")]
-        public string Username { get; protected set; } = "QUANTCONNECT";
+        public string Username { get; internal set; }
 
         [JsonProperty(PropertyName = "554")]
-        public string Password { get; protected set; } = "udpWuzLTH7GDe9bN";
+        public string Password { get; internal set; }
     }
 }
