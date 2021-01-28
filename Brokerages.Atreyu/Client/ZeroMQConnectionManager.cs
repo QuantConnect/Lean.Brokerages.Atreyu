@@ -79,7 +79,7 @@ namespace QuantConnect.Brokerages.Atreyu
             var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password));
             if (response.Status != 0)
             {
-                throw new Exception("AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate.");
+                throw new Exception($"AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate. Error {response.Text}");
             }
 
             _sessionId = response.SessionId;

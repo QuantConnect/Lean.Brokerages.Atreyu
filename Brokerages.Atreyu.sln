@@ -3,15 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brokerages.Atreyu", "Brokerages.Atreyu\Brokerages.Atreyu.csproj", "{2218237B-4D3B-4E70-8308-0CC80A14FCD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Brokerages.Atreyu", "Brokerages.Atreyu\Brokerages.Atreyu.csproj", "{2218237B-4D3B-4E70-8308-0CC80A14FCD8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantConnect", "..\Lean\Common\QuantConnect.csproj", "{2545C0B4-FABB-49C9-8DD1-9AD7EE23F86B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuantConnect", "..\Lean\Common\QuantConnect.csproj", "{2545C0B4-FABB-49C9-8DD1-9AD7EE23F86B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantConnect.Logging", "..\Lean\Logging\QuantConnect.Logging.csproj", "{01911409-86BE-4E7D-9947-DF714138610D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuantConnect.Logging", "..\Lean\Logging\QuantConnect.Logging.csproj", "{01911409-86BE-4E7D-9947-DF714138610D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantConnect.Brokerages", "..\Lean\Brokerages\QuantConnect.Brokerages.csproj", "{2D3E13CF-2D14-4180-A42D-F0A13AF0ADE2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuantConnect.Brokerages", "..\Lean\Brokerages\QuantConnect.Brokerages.csproj", "{2D3E13CF-2D14-4180-A42D-F0A13AF0ADE2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantConnect.Configuration", "..\Lean\Configuration\QuantConnect.Configuration.csproj", "{0AEB4EA3-28C8-476E-89FD-926F06590B4C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuantConnect.Configuration", "..\Lean\Configuration\QuantConnect.Configuration.csproj", "{0AEB4EA3-28C8-476E-89FD-926F06590B4C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuantConnect.Tests", "..\Lean\Tests\QuantConnect.Tests.csproj", "{D390917E-72AF-41B5-AF9E-B202DFCEFA22}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brokerages.Atreyu.Tests", "Tests\Brokerages.Atreyu.Tests.csproj", "{7F325CDD-0680-415A-B266-3200E1A1AFDD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -83,6 +87,30 @@ Global
 		{0AEB4EA3-28C8-476E-89FD-926F06590B4C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0AEB4EA3-28C8-476E-89FD-926F06590B4C}.Release|x64.ActiveCfg = Release|Any CPU
 		{0AEB4EA3-28C8-476E-89FD-926F06590B4C}.Release|x64.Build.0 = Release|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Debug|x64.Build.0 = Debug|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Mono|Any CPU.ActiveCfg = Debug|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Mono|Any CPU.Build.0 = Debug|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Mono|x64.ActiveCfg = Debug|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Mono|x64.Build.0 = Debug|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Release|x64.ActiveCfg = Release|Any CPU
+		{D390917E-72AF-41B5-AF9E-B202DFCEFA22}.Release|x64.Build.0 = Release|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Debug|x64.Build.0 = Debug|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Mono|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Mono|Any CPU.Build.0 = Debug|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Mono|x64.ActiveCfg = Debug|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Mono|x64.Build.0 = Debug|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Release|x64.ActiveCfg = Release|Any CPU
+		{7F325CDD-0680-415A-B266-3200E1A1AFDD}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
