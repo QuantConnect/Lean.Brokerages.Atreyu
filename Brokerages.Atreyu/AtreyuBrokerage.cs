@@ -53,10 +53,19 @@ namespace QuantConnect.Brokerages.Atreyu
                 algorithm)
         { }
 
+        /// <summary>
+        ///  Creates a new <see cref="AtreyuBrokerage"/> from the specified values
+        /// </summary>
+        /// <param name="host">Instance url</param>
+        /// <param name="requestPort">Port for request/reply (REQREP) messaging pattern</param>
+        /// <param name="subscribePort">Port for publish/subscribe (PUBSUB) messaging pattern</param>
+        /// <param name="username">The login user name</param>
+        /// <param name="password">The login password</param>
+        /// <param name="algorithm">The algorithm instance</param>
         public AtreyuBrokerage(
             string host,
-            int reqPort,
-            int subPort,
+            int requestPort,
+            int subscribePort,
             string username,
             string password,
             IAlgorithm algorithm) : base("Atreyu")
@@ -65,7 +74,7 @@ namespace QuantConnect.Brokerages.Atreyu
             _orderProvider = algorithm.Transactions;
             _securityProvider = algorithm.Portfolio;
 
-            _zeroMQ = new ZeroMQConnectionManager(host, reqPort, subPort, username, password);
+            _zeroMQ = new ZeroMQConnectionManager(host, requestPort, subscribePort, username, password);
             _zeroMQ.MessageRecieved += (s, e) => OnMessage(e);
         }
 

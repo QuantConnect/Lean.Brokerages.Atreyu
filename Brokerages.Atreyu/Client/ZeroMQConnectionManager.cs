@@ -32,8 +32,8 @@ namespace QuantConnect.Brokerages.Atreyu
         private static TimeSpan _timeout = TimeSpan.FromSeconds(10);
 
         private readonly string _host;
-        private readonly int _reqPort;
-        private readonly int _subPort;
+        private readonly int _requestPort;
+        private readonly int _subscribePort;
         private readonly string _username;
         private readonly string _password;
 
@@ -44,14 +44,22 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public bool IsConnected => _connected;
 
-        public ZeroMQConnectionManager(string host, int reqPort, int subPort, string username, string password)
+        /// <summary>
+        /// Creates ZeroMQ client
+        /// </summary>
+        /// <param name="host">Instance url</param>
+        /// <param name="requestPort">Port for request/reply (REQREP) messaging pattern</param>
+        /// <param name="subscribePort">Port for publish/subscribe (PUBSUB) messaging pattern</param>
+        /// <param name="username">The login user name</param>
+        /// <param name="password">The login password</param>
+        public ZeroMQConnectionManager(string host, int requestPort, int subscribePort, string username, string password)
         {
             _subscribeSocket = new SubscriberSocket();
             _cancellationTokenSource = new CancellationTokenSource();
 
             _host = host;
-            _reqPort = reqPort;
-            _subPort = subPort;
+            _requestPort = requestPort;
+            _subscribePort = subscribePort;
             _username = username;
             _password = password;
         }
@@ -62,7 +70,7 @@ namespace QuantConnect.Brokerages.Atreyu
             var token = _cancellationTokenSource.Token;
             Task.Factory.StartNew(() =>
             {
-                _subscribeSocket.Connect(_host + $":{_subPort}");
+                _subscribeSocket.Connect(_host + $":{_subscribePort}");
                 _subscribeSocket.Subscribe(string.Empty); // subscribe to everything
 
                 if (Log.DebuggingEnabled)
@@ -94,7 +102,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public void Disconnect()
         {
-            _subscribeSocket?.Disconnect(_host + $":{_subPort}");
+            _subscribeSocket?.Disconnect(_host + $":{_subscribePort}");
         }
 
         public string Send(RequestMessage message)
@@ -105,7 +113,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 // it can be less efficient that single client forever, but more reliable.
                 using (var requestSocket = new RequestSocket())
                 {
-                    requestSocket.Connect(_host + $":{_reqPort}");
+                    requestSocket.Connect(_host + $":{_requestPort}");
 
                     if (message is SignedMessage)
                     {

@@ -76,26 +76,25 @@ namespace QuantConnect.Brokerages.Atreyu
         /// <returns></returns>
         public override IBrokerage CreateBrokerage(LiveNodePacket job, IAlgorithm algorithm)
         {
-            var required = new[] {
-                "atreyu-host",
-                "atreyu-req-port",
-                "atreyu-sub-port",
-                "atreyu-username",
-                "atreyu-password"
-            };
+            var errors = new List<string>();
+            var host = Read<string>(job.BrokerageData, "atreyu-host", errors);
+            var requestPort = Read<int>(job.BrokerageData, "atreyu-req-port", errors);
+            var subscribePort = Read<int>(job.BrokerageData, "atreyu-sub-port", errors);
+            var username = Read<string>(job.BrokerageData, "atreyu-username", errors);
+            var password = Read<string>(job.BrokerageData, "atreyu-password", errors);
 
-            foreach (var item in required)
+            if (errors.Count != 0)
             {
-                if (string.IsNullOrEmpty(job.BrokerageData[item]))
-                    throw new Exception($"AtreyuBrokerageFactory.CreateBrokerage: Missing {item} in config.json");
+                // if we had errors then we can't create the instance
+                throw new Exception(string.Join(Environment.NewLine, errors));
             }
 
             var brokerage = new AtreyuBrokerage(
-                job.BrokerageData["atreyu-host"],
-                job.BrokerageData["atreyu-req-port"].ToInt32(),
-                job.BrokerageData["atreyu-sub-port"].ToInt32(),
-                job.BrokerageData["atreyu-username"],
-                job.BrokerageData["atreyu-password"],
+                host, 
+                requestPort, 
+                subscribePort, 
+                username, 
+                password,
                 algorithm);
 
             return brokerage;
