@@ -33,7 +33,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public void OnMessage(string message)
         {
-            JObject token = JObject.Parse(message);
+            var token = JObject.Parse(message);
             var msgType = token.GetValue("MsgType", StringComparison.OrdinalIgnoreCase)?.Value<string>();
             if (string.IsNullOrEmpty(msgType))
             {
@@ -50,7 +50,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 return;
             }
 
-            ExecutionReport report = token.ToObject<ExecutionReport>();
+            var report = token.ToObject<ExecutionReport>();
             try
             {
                 if (_streamLocked)
@@ -86,7 +86,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         private void OnExecution(ExecutionReport report)
         {
-            Orders.Order order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
+            var order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
             if (order != null)
             {
                 OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, $"Atreyu Order Event. Message: {report.Text}")
@@ -98,7 +98,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         private void OnOrderFill(ExecutionReport report)
         {
-            Orders.Order order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID);
+            var order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID);
             var fillingReport = report as FillOrderReport;
             if (fillingReport == null)
             {
@@ -150,8 +150,7 @@ namespace QuantConnect.Brokerages.Atreyu
         {
             while (_messageBuffer.Any())
             {
-                ExecutionReport e;
-                _messageBuffer.TryDequeue(out e);
+                _messageBuffer.TryDequeue(out var e);
 
                 OnMessageImpl(e);
             }

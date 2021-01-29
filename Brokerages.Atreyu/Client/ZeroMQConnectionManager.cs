@@ -79,7 +79,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 }
                 while (true)
                 {
-                    string messageReceived = _subscribeSocket.ReceiveFrameString();
+                    var messageReceived = _subscribeSocket.ReceiveFrameString();
                     OnMessageRecieved(messageReceived);
 
                     if (token.IsCancellationRequested) break;
@@ -124,8 +124,7 @@ namespace QuantConnect.Brokerages.Atreyu
                         _timeout,
                         JsonConvert.SerializeObject(message));
 
-                    string response;
-                    requestSocket.TryReceiveFrameString(_timeout, out response);
+                    requestSocket.TryReceiveFrameString(_timeout, out string response);
                     return response;
                 }
             }

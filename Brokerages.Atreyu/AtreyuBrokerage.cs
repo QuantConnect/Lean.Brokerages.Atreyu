@@ -139,7 +139,7 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override bool PlaceOrder(Order order)
         {
-            if ((order.AbsoluteQuantity % 1) != 0)
+            if (order.AbsoluteQuantity % 1 != 0)
             {
                 throw new ArgumentException(
                     $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: Quantity has to be an Integer, but sent {order.Quantity}");
@@ -175,7 +175,7 @@ namespace QuantConnect.Brokerages.Atreyu
                     throw new NotSupportedException($"AtreyuBrokerage.ConvertOrderType: Unsupported order type: {order.Type}");
             }
 
-            bool submitted = false;
+            var submitted = false;
             WithLockedStream(() =>
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(request);
@@ -224,7 +224,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 throw new NotSupportedException("AtreyuBrokerage.UpdateOrder: Multiple orders update not supported. Please cancel and re-create.");
             }
 
-            if ((order.AbsoluteQuantity % 1) != 0)
+            if (order.AbsoluteQuantity % 1 != 0)
             {
                 throw new ArgumentException(
                     $"Order failed, Order Id: {order.Id} timestamp: {order.Time} quantity: {order.Quantity} content: Quantity has to be an Integer, but sent {order.Quantity}");
@@ -243,7 +243,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 request.Price = (order as LimitOrder)?.LimitPrice ?? order.Price;
             }
 
-            bool submitted = false;
+            var submitted = false;
             WithLockedStream(() =>
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(request);
@@ -289,7 +289,7 @@ namespace QuantConnect.Brokerages.Atreyu
                 return false;
             }
 
-            bool submitted = false;
+            var submitted = false;
             WithLockedStream(() =>
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(new CancelEquityOrderMessage()
