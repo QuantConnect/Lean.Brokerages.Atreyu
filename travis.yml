@@ -3,7 +3,19 @@ language: csharp
 mono:
   - 5.12.0
 solution: Brokerages.Atreyu.sln
+before_install:
+  - echo Will try to use branch ${TRAVIS_PULL_REQUEST_BRANCH:-${TRAVIS_BRANCH}}
+  - QC_BRANCH=${TRAVIS_PULL_REQUEST_BRANCH:-${TRAVIS_BRANCH}}
+  - git ls-remote --exit-code --heads https://github.com/QuantConnect/Lean.git $QC_BRANCH && git clone --branch=$QC_BRANCH https://github.com/QuantConnect/Lean.git $TRAVIS_BUILD_DIR/../Lean || git clone https://github.com/QuantConnect/Lean.git $TRAVIS_BUILD_DIR/../Lean
+  - export PATH="$HOME/miniconda3/bin:$PATH"
+  - wget https://cdn.quantconnect.com/miniconda/Miniconda3-4.5.12-Linux-x86_64.sh
+  - bash Miniconda3-4.5.12-Linux-x86_64.sh -b
+  - rm -rf Miniconda3-4.5.12-Linux-x86_64.sh
+  - sudo ln -s $HOME/miniconda3/lib/libpython3.6m.so /usr/lib/libpython3.6m.so
+  - conda update -y python conda pip
+  - conda install -y python=3.6.8
 install:
+  - nuget restore ../Lean/QuantConnect.Lean.sln -v quiet
   - nuget restore Brokerages.Atreyu.sln -v quiet
   - nuget install NUnit.Runners -Version 3.11.1 -OutputDirectory testrunner
 script:
