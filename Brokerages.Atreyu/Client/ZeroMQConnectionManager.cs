@@ -65,7 +65,10 @@ namespace QuantConnect.Brokerages.Atreyu
                 _subscribeSocket.Connect(_host + $":{_subPort}");
                 _subscribeSocket.Subscribe(string.Empty); // subscribe to everything
 
-                Log.Trace("Subscriber socket connecting...");
+                if (Log.DebuggingEnabled)
+                {
+                    Log.Debug("Subscriber socket connecting...");
+                }
                 while (true)
                 {
                     string messageReceived = _subscribeSocket.ReceiveFrameString();
@@ -73,7 +76,10 @@ namespace QuantConnect.Brokerages.Atreyu
 
                     if (token.IsCancellationRequested) break;
                 }
-                Log.Trace($"ZeroMQConnectionManager: stopped polling messages");
+                if (Log.DebuggingEnabled)
+                {
+                    Log.Debug("ZeroMQConnectionManager: stopped polling messages");
+                }
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
             var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password));

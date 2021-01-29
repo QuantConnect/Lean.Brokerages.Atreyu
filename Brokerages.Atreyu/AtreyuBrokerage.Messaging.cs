@@ -40,7 +40,10 @@ namespace QuantConnect.Brokerages.Atreyu
                 throw new ArgumentException("Message type is not specified.");
             }
 
-            Log.Trace(message);
+            if (Log.DebuggingEnabled)
+            {
+                Log.Debug(message);
+            }
 
             if (!token.TryGetValue("ExecType", StringComparison.OrdinalIgnoreCase, out _))
             {

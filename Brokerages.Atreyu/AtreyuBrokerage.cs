@@ -73,6 +73,10 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override List<Order> GetOpenOrders()
         {
+            if (Log.DebuggingEnabled)
+            {
+                Log.Debug("AtreyuBrokerage.GetOpenOrders()");
+            }
             var response = _zeroMQ.Send<OpenOrdersResultMessage>(new QueryOpenOrdersMessage());
             if (response.Status != 0)
             {
@@ -93,7 +97,10 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override List<Holding> GetAccountHoldings()
         {
-            Log.Trace("AtreyuBrokerage.GetAccountHoldings()");
+            if (Log.DebuggingEnabled)
+            {
+                Log.Debug("AtreyuBrokerage.GetAccountHoldings()");
+            }
             var response = _zeroMQ.Send<OpenPositionsResultMessage>(new QueryPositionsMessage());
             if (response.Status != 0)
             {
@@ -112,7 +119,10 @@ namespace QuantConnect.Brokerages.Atreyu
 
         public override List<CashAmount> GetCashBalance()
         {
-            Log.Trace("AtreyuBrokerage.GetCashBalance()");
+            if (Log.DebuggingEnabled)
+            {
+                Log.Debug("AtreyuBrokerage.GetCashBalance()");
+            }
             return new List<CashAmount>() { new CashAmount(1000, "USD") };
             //throw new NotImplementedException();
         }
