@@ -88,6 +88,12 @@ namespace QuantConnect.Brokerages.Atreyu
                 Log.Debug("AtreyuBrokerage.GetOpenOrders()");
             }
             var response = _zeroMQ.Send<OpenOrdersResultMessage>(new QueryOpenOrdersMessage());
+
+            if (response == null)
+            {
+                throw new Exception("AtreyuBrokerage.GetOpenOrders: message was not sent.");
+            }
+
             if (response.Status != 0)
             {
                 throw new Exception($"AtreyuBrokerage.GetOpenOrders: request failed: [{(int)response.Status}] ErrorMessage: {response.Text}");
@@ -112,6 +118,12 @@ namespace QuantConnect.Brokerages.Atreyu
                 Log.Debug("AtreyuBrokerage.GetAccountHoldings()");
             }
             var response = _zeroMQ.Send<OpenPositionsResultMessage>(new QueryPositionsMessage());
+
+            if (response == null)
+            {
+                throw new Exception("AtreyuBrokerage.GetAccountHoldings: message was not sent.");
+            }
+
             if (response.Status != 0)
             {
                 throw new Exception($"AtreyuBrokerage.GetAccountHoldings: request failed: [{(int)response.Status}] ErrorMessage: {response.Text}");
@@ -179,6 +191,11 @@ namespace QuantConnect.Brokerages.Atreyu
             WithLockedStream(() =>
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(request);
+
+                if (response == null)
+                {
+                    throw new Exception("AtreyuBrokerage.PlaceOrder: message was not sent.");
+                }
 
                 if (response.Status == 0)
                 {
@@ -248,6 +265,11 @@ namespace QuantConnect.Brokerages.Atreyu
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(request);
 
+                if (response == null)
+                {
+                    throw new Exception("AtreyuBrokerage.UpdateOrder: message was not sent.");
+                }
+
                 if (response.Status == 0)
                 {
                     OnOrderEvent(new OrderEvent(
@@ -298,6 +320,11 @@ namespace QuantConnect.Brokerages.Atreyu
                     OrigClOrdID = order.BrokerId.First(),
                     TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
                 });
+
+                if (response == null)
+                {
+                    throw new Exception("AtreyuBrokerage.CancelOrder: message was not sent.");
+                }
 
                 if (response.Status == 0)
                 {

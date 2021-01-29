@@ -20,6 +20,7 @@ using QuantConnect.Brokerages.Atreyu.Client.Messages;
 using QuantConnect.Logging;
 using QuantConnect.Util;
 using System;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -120,11 +121,19 @@ namespace QuantConnect.Brokerages.Atreyu
                         (message as SignedMessage).SessionId = _sessionId;
                     }
 
-                    requestSocket.TrySendFrame(
+                    if (!requestSocket.TrySendFrame(
                         _timeout,
-                        JsonConvert.SerializeObject(message));
+                        JsonConvert.SerializeObject(message)))
+                    {
+                        Log.Error($"ZeroMQConnectionManager.Send(): could not send message. Content: {JsonConvert.SerializeObject(message)}");
+                        return null;
+                    }
 
-                    requestSocket.TryReceiveFrameString(_timeout, out string response);
+                    if (!requestSocket.TryReceiveFrameString(_timeout, out string response))
+                    {
+                        Log.Error($"ZeroMQConnectionManager.Send(): could not receive response within specified time. Timeout: {_timeout.ToString("c", CultureInfo.InvariantCulture)}");
+                        return null;
+                    }
                     return response;
                 }
             }
@@ -134,16 +143,22 @@ namespace QuantConnect.Brokerages.Atreyu
             }
         }
 
-        public T Send<T>(RequestMessage message)
+        public T Send<T>(RequestMessage message) where T : ResponseMessage
         {
             try
             {
-                return JsonConvert.DeserializeObject<T>(Send(message));
+                var response = Send(message);
+                if (!string.IsNullOrEmpty(response))
+                {
+                    return JsonConvert.DeserializeObject<T>(response);
+                }
             }
             catch (Exception e)
             {
                 throw new Exception($"AtreyuBrokerage: request failed: ErrorMessage: {e.Message}");
             }
+
+            return default;
         }
 
         private void OnMessageRecieved(string message)
