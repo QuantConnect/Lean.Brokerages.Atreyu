@@ -43,7 +43,7 @@ namespace QuantConnect.Brokerages.Atreyu
         private readonly IOrderProvider _orderProvider;
         private readonly ZeroMQConnectionManager _zeroMQ;
         private readonly ISymbolMapper _symbolMapper = new AtreyuSymbolMapper();
-
+        private readonly ISecurityProvider _securityProvider;
         public AtreyuBrokerage(IAlgorithm algorithm, IDataAggregator aggregator)
             : this(Config.Get("atreyu-host"),
                 Config.GetInt("atreyu-req-port"),
@@ -63,6 +63,7 @@ namespace QuantConnect.Brokerages.Atreyu
         {
             _algorithm = algorithm;
             _orderProvider = algorithm.Transactions;
+            _securityProvider = algorithm.Portfolio;
 
             _zeroMQ = new ZeroMQConnectionManager(host, reqPort, subPort, username, password);
             _zeroMQ.MessageRecieved += (s, e) => OnMessage(e);

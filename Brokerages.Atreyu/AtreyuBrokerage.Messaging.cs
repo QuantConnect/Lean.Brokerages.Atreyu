@@ -113,10 +113,11 @@ namespace QuantConnect.Brokerages.Atreyu
                     return;
                 }
 
+                var security = _securityProvider.GetSecurity(order.Symbol);
                 var fillPrice = fillingReport.LastPx;
                 var fillQuantity = order.Direction == OrderDirection.Sell ? -fillingReport.LastShares : fillingReport.LastShares;
                 var updTime = Time.ParseFIXUtcTimestamp(fillingReport.TransactTime);
-                var orderFee = OrderFee.Zero;
+                var orderFee = security.FeeModel.GetOrderFee(new OrderFeeParameters(security, order));
                 var status = ConvertOrderStatus(fillingReport.OrdStatus);
                 var orderEvent = new OrderEvent
                 (
