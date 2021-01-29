@@ -42,9 +42,14 @@ namespace QuantConnect.Brokerages.Atreyu
         private readonly IAlgorithm _algorithm;
         private readonly IOrderProvider _orderProvider;
         private readonly ZeroMQConnectionManager _zeroMQ;
-        private readonly ISymbolMapper _symbolMapper = new AtreyuSymbolMapper();
+        private readonly ISymbolMapper _symbolMapper;
         private readonly ISecurityProvider _securityProvider;
-        public AtreyuBrokerage(IAlgorithm algorithm, IDataAggregator aggregator)
+
+        /// <summary>
+        /// Creates a new <see cref="AtreyuBrokerage"/> from the specified values retrieving data from configuration file
+        /// </summary>
+        /// <param name="algorithm">The algorithm instance</param>
+        public AtreyuBrokerage(IAlgorithm algorithm)
             : this(Config.Get("atreyu-host"),
                 Config.GetInt("atreyu-req-port"),
                 Config.GetInt("atreyu-sub-port"),
@@ -70,9 +75,15 @@ namespace QuantConnect.Brokerages.Atreyu
             string password,
             IAlgorithm algorithm) : base("Atreyu")
         {
+            if (_algorithm == null)
+            {
+                throw new ArgumentNullException(nameof(algorithm));
+            }
+
             _algorithm = algorithm;
-            _orderProvider = algorithm.Transactions;
-            _securityProvider = algorithm.Portfolio;
+            _orderProvider = _algorithm.Transactions;
+            _securityProvider = _algorithm.Portfolio;
+            _symbolMapper = new AtreyuSymbolMapper();
 
             _zeroMQ = new ZeroMQConnectionManager(host, requestPort, subscribePort, username, password);
             _zeroMQ.MessageRecieved += (s, e) => OnMessage(e);

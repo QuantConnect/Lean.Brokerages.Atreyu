@@ -18,7 +18,7 @@ using QuantConnect.Interfaces;
 namespace QuantConnect.Orders
 {
     /// <summary>
-    /// Contains additional properties and settings for an order submitted to Binance brokerage
+    /// Contains additional properties and settings for an order submitted to Atreyu brokerage
     /// </summary>
     public class AtreyuOrderProperties : OrderProperties
     {
@@ -35,7 +35,7 @@ namespace QuantConnect.Orders
         /// </summary>
         public override IOrderProperties Clone()
         {
-            return (BinanceOrderProperties)MemberwiseClone();
+            return (AtreyuOrderProperties)MemberwiseClone();
         }
     }
 }
