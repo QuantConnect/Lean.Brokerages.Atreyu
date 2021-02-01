@@ -159,6 +159,8 @@ namespace QuantConnect.Brokerages.Atreyu
 
         private OrderStatus ConvertExecType(string execType)
         {
+            // Unlike OrdStatus, ExecType field is provided in executions
+            // values are similar, but a bit different. Char values are not provided
             switch (execType.ToUpperInvariant())
             {
                 case "NEW":

@@ -46,6 +46,11 @@ namespace QuantConnect.Brokerages.Atreyu
         private readonly ISecurityProvider _securityProvider;
 
         /// <summary>
+        /// Checks if the ZeroMQ is connected
+        /// </summary>
+        public override bool IsConnected => _zeroMQ.IsConnected;
+
+        /// <summary>
         /// Creates a new <see cref="AtreyuBrokerage"/> from the specified values retrieving data from configuration file
         /// </summary>
         /// <param name="algorithm">The algorithm instance</param>
@@ -75,7 +80,7 @@ namespace QuantConnect.Brokerages.Atreyu
             string password,
             IAlgorithm algorithm) : base("Atreyu")
         {
-            if (_algorithm == null)
+            if (algorithm == null)
             {
                 throw new ArgumentNullException(nameof(algorithm));
             }
@@ -88,9 +93,6 @@ namespace QuantConnect.Brokerages.Atreyu
             _zeroMQ = new ZeroMQConnectionManager(host, requestPort, subscribePort, username, password);
             _zeroMQ.MessageRecieved += (s, e) => OnMessage(e);
         }
-
-
-        public override bool IsConnected => _zeroMQ.IsConnected;
 
         public override List<Order> GetOpenOrders()
         {
@@ -196,6 +198,14 @@ namespace QuantConnect.Brokerages.Atreyu
                     break;
                 default:
                     throw new NotSupportedException($"AtreyuBrokerage.ConvertOrderType: Unsupported order type: {order.Type}");
+            }
+
+            if (order.Type == OrderType.Limit && (order.Properties is AtreyuOrderProperties orderProperties))
+            {
+                if (orderProperties.PostOnly)
+                {
+                    request.RoutingPolicy = "P";
+                }
             }
 
             var submitted = false;

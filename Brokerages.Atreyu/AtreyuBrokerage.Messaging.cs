@@ -45,6 +45,8 @@ namespace QuantConnect.Brokerages.Atreyu
                 Log.Debug(message);
             }
 
+            // we can ignore not-execution messages
+            // TODO: subscribe to channels that we really need and miss others
             if (!token.TryGetValue("ExecType", StringComparison.OrdinalIgnoreCase, out _))
             {
                 return;

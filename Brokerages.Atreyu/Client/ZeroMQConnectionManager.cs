@@ -29,7 +29,7 @@ namespace QuantConnect.Brokerages.Atreyu
     public class ZeroMQConnectionManager : IDisposable
     {
         private readonly SubscriberSocket _subscribeSocket;
-        private CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationTokenSource _cancellationTokenSource;
         private static TimeSpan _timeout = TimeSpan.FromSeconds(10);
 
         private readonly string _host;
