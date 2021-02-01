@@ -80,10 +80,18 @@ namespace QuantConnect.Brokerages.Atreyu
                 }
                 while (true)
                 {
-                    var messageReceived = _subscribeSocket.ReceiveFrameString();
-                    OnMessageRecieved(messageReceived);
+                    try
+                    {
+                        if (token.IsCancellationRequested)
+                            break;
 
-                    if (token.IsCancellationRequested) break;
+                        var messageReceived = _subscribeSocket.ReceiveFrameString();
+                        OnMessageRecieved(messageReceived);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error($"ZeroMQConnectionManager.PUBSUB(): error occurs. Message: {e.Message}");
+                    }
                 }
                 if (Log.DebuggingEnabled)
                 {
