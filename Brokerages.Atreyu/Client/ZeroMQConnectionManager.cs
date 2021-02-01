@@ -72,7 +72,7 @@ namespace QuantConnect.Brokerages.Atreyu
             Task.Factory.StartNew(() =>
             {
                 _subscribeSocket.Connect(_host + $":{_subscribePort}");
-                _subscribeSocket.Subscribe(string.Empty); // subscribe to everything
+                _subscribeSocket.SubscribeToAnyTopic();
 
                 if (Log.DebuggingEnabled)
                 {
@@ -82,11 +82,19 @@ namespace QuantConnect.Brokerages.Atreyu
                 {
                     try
                     {
-                        if (token.IsCancellationRequested)
+                        if (token.IsCancellationRequested || !_connected)
                             break;
 
-                        var messageReceived = _subscribeSocket.ReceiveFrameString();
-                        OnMessageRecieved(messageReceived);
+                        if (_subscribeSocket.TryReceiveFrameString(TimeSpan.FromMinutes(1), out var messageReceived))
+                        {
+                            OnMessageRecieved(messageReceived);
+                            continue;
+                        }
+
+                        if (Log.DebuggingEnabled)
+                        {
+                            Log.Debug($"NetMQ.PUB-SUB: No message was recieved within timeout {_timeout.ToString("c", CultureInfo.InvariantCulture)}");
+                        }
                     }
                     catch (Exception e)
                     {
@@ -112,10 +120,17 @@ namespace QuantConnect.Brokerages.Atreyu
         public void Disconnect()
         {
             _subscribeSocket?.Disconnect(_host + $":{_subscribePort}");
+            _connected = false;
         }
 
         public string Send(RequestMessage message)
         {
+            if (!IsConnected)
+            {
+                Log.Error($"ZeroMQConnectionManager.Send(): connection has been disposed.");
+                return null;
+            }
+
             try
             {
                 // request, Unit Of Work pattern
@@ -177,6 +192,8 @@ namespace QuantConnect.Brokerages.Atreyu
         public void Dispose()
         {
             _cancellationTokenSource?.Cancel();
+
+            // forcibly close the connection
             _subscribeSocket?.DisposeSafely();
         }
     }
