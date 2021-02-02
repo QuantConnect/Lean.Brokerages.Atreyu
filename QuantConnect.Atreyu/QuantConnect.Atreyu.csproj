@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{2218237B-4D3B-4E70-8308-0CC80A14FCD8}</ProjectGuid>
+    <TargetFramework>net462</TargetFramework>
+    <AssemblyTitle>QuantConnect.Atreyu</AssemblyTitle>
+    <Product>QuantConnect.Atreyu</Product>
+    <Copyright>Copyright ©  2020</Copyright>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+    <AssemblyName>QuantConnect.Atreyu</AssemblyName>
+    <RootNamespace>QuantConnect.Atreyu</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="AsyncIO" Version="0.1.26.0" />
+    <PackageReference Include="NetMQ" Version="4.0.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.Buffers" Version="4.5.1" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="5.0.0" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.4.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Lean\Brokerages\QuantConnect.Brokerages.csproj" />
+    <ProjectReference Include="..\..\Lean\Common\QuantConnect.csproj" />
+    <ProjectReference Include="..\..\Lean\Configuration\QuantConnect.Configuration.csproj" />
+    <ProjectReference Include="..\..\Lean\Logging\QuantConnect.Logging.csproj" />
+  </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <ItemGroup>
+      <_CopyItems Include="$(TargetDir)*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(SolutionDir)..\Lean\Launcher\bin\Debug" />
+  </Target>
+</Project>
