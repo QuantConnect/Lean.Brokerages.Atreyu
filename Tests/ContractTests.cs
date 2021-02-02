@@ -14,13 +14,12 @@
 */
 
 using System;
-using NetMQ;
-using NUnit.Framework;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using QuantConnect.Brokerages.Atreyu.Client.Messages;
+using NUnit.Framework;
+using QuantConnect.Atreyu.Client.Messages;
 
-namespace Brokerages.Atreyu.Tests
+namespace QuantConnect.Atreyu.Tests
 {
     [TestFixture]
     public class ContractTests

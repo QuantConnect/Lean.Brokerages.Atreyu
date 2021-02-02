@@ -16,8 +16,8 @@ before_install:
   - conda install -y python=3.6.8
 install:
   - nuget restore ../Lean/QuantConnect.Lean.sln -v quiet
-  - nuget restore Brokerages.Atreyu.sln -v quiet
+  - nuget restore Atreyu.sln -v quiet
   - nuget install NUnit.Runners -Version 3.11.1 -OutputDirectory testrunner
 script:
-  - msbuild /p:Configuration=Release /p:VbcToolExe=vbnc.exe /v:quiet /p:WarningLevel=1 Brokerages.Atreyu.sln
-  - mono ./testrunner/NUnit.ConsoleRunner.3.11.1/tools/nunit3-console.exe ./Tests/bin/Release/Brokerages.Atreyu.Tests.dll --where "cat != TravisExclude" --labels=Off --params:log-handler=ConsoleErrorLogHandler
+  - msbuild /p:Configuration=Release /p:VbcToolExe=vbnc.exe /v:quiet /p:WarningLevel=1 Atreyu.sln
+  - mono ./testrunner/NUnit.ConsoleRunner.3.11.1/tools/nunit3-console.exe ./Tests/bin/Release/QuantConnect.Atreyu.Tests.dll --where "cat != TravisExclude" --labels=Off --params:log-handler=ConsoleErrorLogHandler
