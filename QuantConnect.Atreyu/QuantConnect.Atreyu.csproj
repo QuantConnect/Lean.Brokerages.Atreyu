@@ -48,10 +48,4 @@
     <ProjectReference Include="..\..\Lean\Configuration\QuantConnect.Configuration.csproj" />
     <ProjectReference Include="..\..\Lean\Logging\QuantConnect.Logging.csproj" />
   </ItemGroup>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <ItemGroup>
-      <_CopyItems Include="$(TargetDir)*.*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(SolutionDir)..\Lean\Launcher\bin\Debug" />
-  </Target>
 </Project>
