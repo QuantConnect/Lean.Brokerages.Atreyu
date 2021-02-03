@@ -17,13 +17,33 @@ using Newtonsoft.Json;
 
 namespace QuantConnect.Atreyu.Client.Messages
 {
+    /// <summary>
+    /// Base Response model. Use for Request-Reply and Publish-Subscribe
+    /// </summary>
     public class ResponseMessage
     {
+        /// <summary>
+        /// Status of the response, 0 is success
+        /// </summary>
         [JsonProperty(PropertyName = "status")]
         public int Status { get; set; }
 
+        /// <summary>
+        /// Free format status text
+        /// </summary>
+        [JsonProperty(PropertyName = "Text")]
         public string Text { get; set; }
-        
+
+        /// <summary>
+        /// Fallback for Text
+        /// Received when order submission fails
+        /// </summary>
+        [JsonProperty(PropertyName = "58")]
+        public string Text58
+        {
+            set => Text = value;
+        }
+
         public string SendingTime { get; set; }
     }
 }

@@ -170,9 +170,9 @@ namespace QuantConnect.Atreyu
             {
                 Side = ConvertDirection(order.Direction),
                 Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
-                ClOrdID = order.Id.ToString(),
+                ClOrdID = Guid.NewGuid().ToString().Replace("-", string.Empty),
                 OrderQty = (int)order.AbsoluteQuantity,
-                // TimeInForce = ConvertTimeInForce(order.TimeInForce),
+                TimeInForce = ConvertTimeInForce(order.TimeInForce),
                 // DeliverToCompID = "CS", // exclude for testing purposes
                 ExDestination = "NSDQ",
                 ExecInst = "1",
