@@ -32,6 +32,8 @@ namespace QuantConnect.Atreyu.Client
         private readonly CancellationTokenSource _cancellationTokenSource;
         private static TimeSpan _timeout = TimeSpan.FromSeconds(10);
 
+        private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
+
         private readonly string _host;
         private readonly int _requestPort;
         private readonly int _subscribePort;
@@ -73,6 +75,7 @@ namespace QuantConnect.Atreyu.Client
             {
                 _subscribeSocket.Connect(_host + $":{_subscribePort}");
                 _subscribeSocket.SubscribeToAnyTopic();
+                _resetEvent.Set();
 
                 if (Log.DebuggingEnabled)
                 {
@@ -107,14 +110,18 @@ namespace QuantConnect.Atreyu.Client
                 }
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
-            var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password));
-            if (response.Status != 0)
+            if (_resetEvent.WaitOne(_timeout))
             {
-                throw new Exception($"AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate. Error {response.Text}");
-            }
+                _connected = true;
+                var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password));
+                if (response.Status != 0)
+                {
+                    throw new Exception(
+                        $"AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate. Error {response.Text}");
+                }
 
-            _sessionId = response.SessionId;
-            _connected = true;
+                _sessionId = response.SessionId;
+            }
         }
 
         public void Disconnect()
