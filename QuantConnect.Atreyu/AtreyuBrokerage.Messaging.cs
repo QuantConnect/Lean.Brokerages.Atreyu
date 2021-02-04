@@ -29,6 +29,7 @@ namespace QuantConnect.Atreyu
     {
         private volatile bool _streamLocked;
         private readonly ConcurrentQueue<ExecutionReport> _messageBuffer = new ConcurrentQueue<ExecutionReport>();
+        private readonly string[] _notMappedStatuses = { "PENDING_REPLACE", "DONE_FOR_DAY" };
 
         public void OnMessage(string message)
         {
@@ -87,6 +88,14 @@ namespace QuantConnect.Atreyu
 
         private void OnExecution(ExecutionReport report)
         {
+            if (_notMappedStatuses.Contains(report.ExecType, StringComparer.OrdinalIgnoreCase))
+            {
+                // do nothing specific;
+                // Lean doesn't have OrderStatus.Updated
+                // we map UpdateSubmitted to Atreyu.Replaced
+                return;
+            }
+
             var order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
             if (order != null)
             {

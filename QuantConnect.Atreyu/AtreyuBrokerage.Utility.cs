@@ -168,7 +168,6 @@ namespace QuantConnect.Atreyu
                     return OrderStatus.Filled;
                 case "PENDING_CANCEL":
                     return OrderStatus.CancelPending;
-                case "PENDING_REPLACE":
                 case "REPLACE":
                     return OrderStatus.UpdateSubmitted;
                 case "CANCELED":

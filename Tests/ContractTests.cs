@@ -110,7 +110,7 @@ namespace QuantConnect.Atreyu.Tests
 
         [Test]
         [TestCaseSource(nameof(ExecutionReports))]
-        public void DeserializeNotExecSubscribeResponse(string json)
+        public void DeserializeExecutionReportSubscribeResponse(string json)
         {
             var report = JsonConvert.DeserializeObject<ExecutionReport>(json);
             Assert.AreEqual(typeof(ExecutionReport), report.GetType());
@@ -145,6 +145,8 @@ namespace QuantConnect.Atreyu.Tests
                ""SecondaryOrderID"":""d5489e6095f8412ab763c597ff53fb9a"",
                ""status"":0
             }"),
+
+            // cancel
             new TestCaseData(@"{
                ""MsgType"":""ExecutionReport"",
                ""SendingTime"":""20210203-21:32:13.135"",
@@ -194,6 +196,127 @@ namespace QuantConnect.Atreyu.Tests
                ""ExecType"":""CANCELED"",
                ""LeavesQty"":0,
                ""SecondaryOrderID"":""d5489e6095f8412ab763c597ff53fb9a"",
+               ""status"":0
+            }"),
+
+            // update
+            // we ignore PENDING_REPLACE
+            new TestCaseData(@"{
+               ""MsgType"":""ExecutionReport"",
+               ""SendingTime"":""20210204-18:24:07.374"",
+               ""OnBehalfOfCompID"":""CERTSIM-TM-06"",
+               ""Account"":""ACC1"",
+               ""AvgPx"":0,
+               ""ClOrdID"":""99fea658d67e4d82bc4e9ec1a567e15a"",
+               ""CumQty"":0,
+               ""ExecID"":""E-3553951748"",
+               ""ExecTransType"":""NEW"",
+               ""LastPx"":0,
+               ""LastShares"":0,
+               ""OrderID"":""O-3553951746"",
+               ""OrderQty"":110,
+               ""OrdStatus"":""REPLACED"",
+               ""OrigClOrdID"":""de45c9c024e744399712b5554bcc909d"",
+               ""Price"":50,
+               ""Side"":""BUY"",
+               ""Symbol"":""BAC"",
+               ""TransactTime"":""20210204-18:24:07.373"",
+               ""ExecType"":""REPLACE"",
+               ""LeavesQty"":110,
+               ""SecondaryOrderID"":""de45c9c024e744399712b5554bcc909d"",
+               ""status"":0
+            }"),
+
+            // rejected
+            new TestCaseData(@"{
+               ""MsgType"":""ExecutionReport"",
+               ""SendingTime"":""20210204-19:36:47.304"",
+               ""OnBehalfOfCompID"":""CS"",
+               ""Account"":""ACC1"",
+               ""AvgPx"":0,
+               ""ClOrdID"":""6b1c2b40f045403ea7ccb15136a79bf4"",
+               ""ExecID"":""##:1288634370"",
+               ""ExecTransType"":""NEW"",
+               ""LastPx"":0,
+               ""LastShares"":0,
+               ""OrderID"":""NONE"",
+               ""OrdStatus"":""REJECTED"",
+               ""Side"":""BUY"",
+               ""Symbol"":""NVDA"",
+               ""Text"":""##:REJECT - Destination not found:CS"",
+               ""TransactTime"":""20210204-19:36:47"",
+               ""OrdRejReason"":0,
+               ""ExecType"":""REJECTED"",
+               ""SecurityType"":""COMMON_STOCK"",
+               ""SecondaryOrderID"":""6b1c2b40f045403ea7ccb15136a79bf4"",
+               ""status"":0
+            }")
+        };
+
+        [Test]
+        [TestCaseSource(nameof(FillingReports))]
+        public void DeserializeFillingReportSubscribeResponse(string json)
+        {
+            var report = JsonConvert.DeserializeObject<FillOrderReport>(json);
+            Assert.IsNotNull(report);
+            Assert.IsInstanceOf<FillOrderReport>(report);
+            Assert.IsNotEmpty(report.ExecType);
+            Assert.IsNotEmpty(report.TransactTime);
+            Assert.Positive(report.LastShares);
+        }
+
+        public static TestCaseData[] FillingReports => new[]
+        {
+            new TestCaseData(@"{
+               ""MsgType"":""ExecutionReport"",
+               ""SendingTime"":""20210204-18:24:07.378"",
+               ""OnBehalfOfCompID"":""CERTSIM-TM-06"",
+               ""Account"":""ACC1"",
+               ""AvgPx"":50,
+               ""ClOrdID"":""99fea658d67e4d82bc4e9ec1a567e15a"",
+               ""CumQty"":36,
+               ""ExecID"":""E-3553951749"",
+               ""ExecTransType"":""NEW"",
+               ""LastMkt"":""ATRU"",
+               ""LastPx"":50,
+               ""LastShares"":36,
+               ""OrderID"":""O-3553951746"",
+               ""OrderQty"":110,
+               ""OrdStatus"":""PARTIALLY_FILLED"",
+               ""OrigClOrdID"":""de45c9c024e744399712b5554bcc909d"",
+               ""Price"":50,
+               ""Side"":""BUY"",
+               ""Symbol"":""BAC"",
+               ""TransactTime"":""20210204-18:24:07.377"",
+               ""ExecType"":""PARTIAL_FILL"",
+               ""LeavesQty"":74,
+               ""SecondaryOrderID"":""de45c9c024e744399712b5554bcc909d"",
+               ""status"":0
+            }"),
+            new TestCaseData(@"{
+               ""MsgType"":""ExecutionReport"",
+               ""SendingTime"":""20210204-18:24:07.388"",
+               ""OnBehalfOfCompID"":""CERTSIM-TM-06"",
+               ""Account"":""ACC1"",
+               ""AvgPx"":50,
+               ""ClOrdID"":""99fea658d67e4d82bc4e9ec1a567e15a"",
+               ""CumQty"":110,
+               ""ExecID"":""E-3553951751"",
+               ""ExecTransType"":""NEW"",
+               ""LastMkt"":""ATRU"",
+               ""LastPx"":50,
+               ""LastShares"":38,
+               ""OrderID"":""O-3553951746"",
+               ""OrderQty"":110,
+               ""OrdStatus"":""FILLED"",
+               ""OrigClOrdID"":""de45c9c024e744399712b5554bcc909d"",
+               ""Price"":50,
+               ""Side"":""BUY"",
+               ""Symbol"":""BAC"",
+               ""TransactTime"":""20210204-18:24:07.387"",
+               ""ExecType"":""FILL"",
+               ""LeavesQty"":0,
+               ""SecondaryOrderID"":""de45c9c024e744399712b5554bcc909d"",
                ""status"":0
             }")
         };
