@@ -108,7 +108,7 @@ namespace QuantConnect.Atreyu
 
         private void OnOrderFill(ExecutionReport report)
         {
-            var order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID);
+            var order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
             var fillingReport = report as FillOrderReport;
             if (fillingReport == null)
             {
