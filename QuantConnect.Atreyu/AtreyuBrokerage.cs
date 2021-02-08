@@ -170,10 +170,10 @@ namespace QuantConnect.Atreyu
             {
                 Side = ConvertDirection(order.Direction),
                 Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
-                ClOrdID = order.Id.ToString(),
+                ClOrdID = Guid.NewGuid().ToString().Replace("-", string.Empty),
                 OrderQty = (int)order.AbsoluteQuantity,
-                // TimeInForce = ConvertTimeInForce(order.TimeInForce),
-                // DeliverToCompID = "CS", // exclude for testing purposes
+                TimeInForce = ConvertTimeInForce(order.TimeInForce),
+                DeliverToCompID = "CS", // exclude for testing purposes
                 ExDestination = "NSDQ",
                 ExecInst = "1",
                 HandlInst = "1",
@@ -216,16 +216,11 @@ namespace QuantConnect.Atreyu
 
                 if (response.Status == 0)
                 {
+                    // Atreyu status flow has an intermediate PENDING_NEW, but Lean doesn't
+                    // skip order event on REQUEST-RESPONSE response
+                    // wait and fire event when receive confirmation from PUBLISH-SUBSCRIBE
                     order.BrokerId.Add(response.ClOrdID);
-                    OnOrderEvent(new OrderEvent(
-                        order,
-                        Time.ParseFIXUtcTimestamp(response.TransactTime),
-                        OrderFee.Zero,
-                        "Atreyu Order Event")
-                    {
-                        Status = OrderStatus.Submitted
-                    });
-                    Log.Trace($"Order submitted successfully - OrderId: {order.Id}");
+                    Log.Trace($"Create Order request submitted successfully at {response.SendingTime}- OrderId: {order.Id}");
                     submitted = true;
                 }
                 else
@@ -289,16 +284,11 @@ namespace QuantConnect.Atreyu
 
                 if (response.Status == 0)
                 {
-                    OnOrderEvent(new OrderEvent(
-                        order,
-                        Time.ParseFIXUtcTimestamp(response.TransactTime),
-                        OrderFee.Zero,
-                        "Atreyu Order Event")
-                    {
-                        Status = OrderStatus.UpdateSubmitted
-                    });
-                    Log.Trace($"Replace submitted successfully - OrderId: {order.Id}");
+                    // Atreyu status flow has an intermediate PENDING_REPLACE, but Lean doesn't
+                    // skip order event on REQUEST-RESPONSE response
+                    // wait and fire event when receive confirmation from PUBLISH-SUBSCRIBE
 
+                    Log.Trace($"Replace submitted successfully - OrderId: {order.Id}");
                     submitted = true;
                 }
                 else

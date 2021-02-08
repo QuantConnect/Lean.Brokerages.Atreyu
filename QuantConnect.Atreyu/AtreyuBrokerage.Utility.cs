@@ -84,9 +84,9 @@ namespace QuantConnect.Atreyu
                 case DayTimeInForce day:
                     return "0";
                 case GoodTilCanceledTimeInForce gtc:
-                    return "1";
+                    //return "1";
                 default:
-                    throw new ArgumentException("AtreyuBrokerage.ConvertTimeInForce: Unsupported TimeInForce");
+                    throw new ArgumentException("AtreyuBrokerage.ConvertTimeInForce: currently support only Day orders (TIF DAY). No DAY+/ GTX or GTC supported.");
             }
         }
 
@@ -168,7 +168,6 @@ namespace QuantConnect.Atreyu
                     return OrderStatus.Filled;
                 case "PENDING_CANCEL":
                     return OrderStatus.CancelPending;
-                case "PENDING_REPLACE":
                 case "REPLACE":
                     return OrderStatus.UpdateSubmitted;
                 case "CANCELED":

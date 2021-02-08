@@ -26,11 +26,15 @@ using QuantConnect.Util;
 
 namespace QuantConnect.Atreyu.Client
 {
+    /// <summary>
+    /// ZeroMQ client wrapper
+    /// </summary>
     public class ZeroMQConnectionManager : IDisposable
     {
         private readonly SubscriberSocket _subscribeSocket;
         private readonly CancellationTokenSource _cancellationTokenSource;
-        private static TimeSpan _timeout = TimeSpan.FromSeconds(10);
+        private static TimeSpan _timeoutRequestResponse = TimeSpan.FromSeconds(10);
+        private static TimeSpan _timeoutPublishSubscribe = TimeSpan.FromSeconds(30);
 
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
 
@@ -40,7 +44,7 @@ namespace QuantConnect.Atreyu.Client
         private readonly string _username;
         private readonly string _password;
 
-        private bool _connected;
+        private volatile bool _connected;
         private string _sessionId;
 
         public event EventHandler<string> MessageRecieved;
@@ -67,6 +71,9 @@ namespace QuantConnect.Atreyu.Client
             _password = password;
         }
 
+        /// <summary>
+        /// Connects to Atreyu PUBSUB communication channel; allocate session id
+        /// </summary>
         public void Connect()
         {
             // subscriber
@@ -88,7 +95,7 @@ namespace QuantConnect.Atreyu.Client
                         if (token.IsCancellationRequested || !_connected)
                             break;
 
-                        if (_subscribeSocket.TryReceiveFrameString(TimeSpan.FromMinutes(1), out var messageReceived))
+                        if (_subscribeSocket.TryReceiveFrameString(_timeoutPublishSubscribe, out var messageReceived))
                         {
                             OnMessageRecieved(messageReceived);
                             continue;
@@ -96,7 +103,7 @@ namespace QuantConnect.Atreyu.Client
 
                         if (Log.DebuggingEnabled)
                         {
-                            Log.Debug($"NetMQ.PUB-SUB: No message was recieved within timeout {_timeout.ToString("c", CultureInfo.InvariantCulture)}");
+                            Log.Debug($"NetMQ.PUB-SUB: No message was received within timeout {_timeoutPublishSubscribe.ToString("c", CultureInfo.InvariantCulture)}");
                         }
                     }
                     catch (Exception e)
@@ -110,9 +117,10 @@ namespace QuantConnect.Atreyu.Client
                 }
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
-            if (_resetEvent.WaitOne(_timeout))
+            if (_resetEvent.WaitOne(_timeoutPublishSubscribe))
             {
                 _connected = true;
+
                 var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password));
                 if (response.Status != 0)
                 {
@@ -122,14 +130,28 @@ namespace QuantConnect.Atreyu.Client
 
                 _sessionId = response.SessionId;
             }
+            else
+            {
+                throw new Exception(
+                    $"AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not connect to PUBSUB communication channel. Port: {_subscribePort}");
+            }
         }
 
+        /// <summary>
+        /// Disconnect from PUBSUB channel
+        /// Connection is still alive, but no messages (hang).
+        /// </summary>
         public void Disconnect()
         {
             _subscribeSocket?.Disconnect(_host + $":{_subscribePort}");
             _connected = false;
         }
 
+        /// <summary>
+        /// Send a request message from a RequestSocket; is blocking
+        /// </summary>
+        /// <param name="message">request message</param>
+        /// <returns>message from the ResponseSocket</returns>
         public string Send(RequestMessage message)
         {
             if (!IsConnected)
@@ -152,16 +174,16 @@ namespace QuantConnect.Atreyu.Client
                     }
 
                     if (!requestSocket.TrySendFrame(
-                        _timeout,
+                        _timeoutRequestResponse,
                         JsonConvert.SerializeObject(message)))
                     {
                         Log.Error($"ZeroMQConnectionManager.Send(): could not send message. Content: {JsonConvert.SerializeObject(message)}");
                         return null;
                     }
 
-                    if (!requestSocket.TryReceiveFrameString(_timeout, out string response))
+                    if (!requestSocket.TryReceiveFrameString(_timeoutRequestResponse, out string response))
                     {
-                        Log.Error($"ZeroMQConnectionManager.Send(): could not receive response within specified time. Timeout: {_timeout.ToString("c", CultureInfo.InvariantCulture)}");
+                        Log.Error($"ZeroMQConnectionManager.Send(): could not receive response within specified time. Timeout: {_timeoutRequestResponse.ToString("c", CultureInfo.InvariantCulture)}");
                         return null;
                     }
                     return response;
@@ -173,6 +195,12 @@ namespace QuantConnect.Atreyu.Client
             }
         }
 
+        /// <summary>
+        /// Send a request message from a RequestSocket; is blocking
+        /// </summary>
+        /// <typeparam name="T">expected type of response message</typeparam>
+        /// <param name="message">request message</param>
+        /// <returns>message from the ResponseSocket</returns>
         public T Send<T>(RequestMessage message) where T : ResponseMessage
         {
             try
@@ -196,10 +224,13 @@ namespace QuantConnect.Atreyu.Client
             MessageRecieved?.Invoke(this, message);
         }
 
+        /// <summary>
+        /// Destroys connection to Atreyu. After this operation we can't reconnect
+        /// </summary>
         public void Dispose()
         {
             _cancellationTokenSource?.Cancel();
-
+            _resetEvent.DisposeSafely();
             // forcibly close the connection
             _subscribeSocket?.DisposeSafely();
         }
