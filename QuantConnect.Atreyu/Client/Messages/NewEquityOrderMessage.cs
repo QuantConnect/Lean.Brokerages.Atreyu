@@ -24,6 +24,9 @@ namespace QuantConnect.Atreyu.Client.Messages
             MsgType = "D";
         }
 
+        [JsonProperty(PropertyName = "109", Required = Required.DisallowNull)]
+        public string ClientId { get; set; }
+
         [JsonProperty(PropertyName = "11", Required = Required.DisallowNull)]
         public string ClOrdID { get; set; }
 
@@ -45,19 +48,19 @@ namespace QuantConnect.Atreyu.Client.Messages
         [JsonProperty(PropertyName = "99")]
         public decimal StopPx { get; set; }
 
-        [JsonProperty(PropertyName = "128", Required = Required.DisallowNull)]
+        [JsonProperty(PropertyName = "128", NullValueHandling = NullValueHandling.Ignore)]
         public string DeliverToCompID { get; set; }
 
-        [JsonProperty(PropertyName = "100", Required = Required.DisallowNull)]
+        [JsonProperty(PropertyName = "100", NullValueHandling = NullValueHandling.Ignore)]
         public string ExDestination { get; set; }
 
-        [JsonProperty(PropertyName = "18", Required = Required.DisallowNull)]
+        [JsonProperty(PropertyName = "18", NullValueHandling = NullValueHandling.Ignore)]
         public string ExecInst { get; set; }
 
         [JsonProperty(PropertyName = "60", Required = Required.DisallowNull)]
         public string TransactTime { get; set; }
 
-        [JsonProperty(PropertyName = "21")]
+        [JsonProperty(PropertyName = "21", NullValueHandling = NullValueHandling.Ignore)]
         public string HandlInst { get; set; }
 
         [JsonProperty(PropertyName = "40")]

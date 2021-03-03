@@ -41,6 +41,10 @@ namespace QuantConnect.Atreyu
         private readonly ISymbolMapper _symbolMapper;
         private readonly ISecurityProvider _securityProvider;
 
+        // Atreyu inputs
+        private readonly string _clientId;
+        private readonly decimal _cashBalance;
+
         /// <summary>
         /// Checks if the ZeroMQ is connected
         /// </summary>
@@ -56,6 +60,8 @@ namespace QuantConnect.Atreyu
                 Config.GetInt("atreyu-sub-port"),
                 Config.Get("atreyu-username"),
                 Config.Get("atreyu-password"),
+                Config.Get("atreyu-client-id"),
+                Config.GetValue<decimal>("atreyu-cash-balance"),
                 algorithm)
         { }
 
@@ -67,6 +73,8 @@ namespace QuantConnect.Atreyu
         /// <param name="subscribePort">Port for publish/subscribe (PUBSUB) messaging pattern</param>
         /// <param name="username">The login user name</param>
         /// <param name="password">The login password</param>
+        /// <param name="clientId">Assigned by Atreyu</param>
+        /// <param name="cashBalance">User input, no FLIRT API endpoint to query this value</param>
         /// <param name="algorithm">The algorithm instance</param>
         public AtreyuBrokerage(
             string host,
@@ -74,6 +82,8 @@ namespace QuantConnect.Atreyu
             int subscribePort,
             string username,
             string password,
+            string clientId,
+            decimal cashBalance,
             IAlgorithm algorithm) : base("Atreyu")
         {
             if (algorithm == null)
@@ -81,6 +91,13 @@ namespace QuantConnect.Atreyu
                 throw new ArgumentNullException(nameof(algorithm));
             }
 
+            if (string.IsNullOrEmpty(clientId))
+            {
+                throw new ArgumentNullException(nameof(clientId));
+            }
+
+            _clientId = clientId;
+            _cashBalance = cashBalance;
             _algorithm = algorithm;
             _orderProvider = _algorithm.Transactions;
             _securityProvider = _algorithm.Portfolio;
@@ -154,8 +171,7 @@ namespace QuantConnect.Atreyu
             {
                 Log.Debug("AtreyuBrokerage.GetCashBalance()");
             }
-            return new List<CashAmount>() { new CashAmount(1000, "USD") };
-            //throw new NotImplementedException();
+            return new List<CashAmount>() { new CashAmount(_cashBalance, "USD") };
         }
 
         public override bool PlaceOrder(Order order)
@@ -170,13 +186,10 @@ namespace QuantConnect.Atreyu
             {
                 Side = ConvertDirection(order.Direction),
                 Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
+                ClientId = _clientId,
                 ClOrdID = Guid.NewGuid().ToString().Replace("-", string.Empty),
                 OrderQty = (int)order.AbsoluteQuantity,
                 TimeInForce = ConvertTimeInForce(order.TimeInForce),
-                DeliverToCompID = "CS", // exclude for testing purposes
-                ExDestination = "NSDQ",
-                ExecInst = "1",
-                HandlInst = "1",
                 TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
             };
 

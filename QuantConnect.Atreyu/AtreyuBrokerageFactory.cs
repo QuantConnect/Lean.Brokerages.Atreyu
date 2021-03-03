@@ -58,7 +58,9 @@ namespace QuantConnect.Atreyu
             { "atreyu-req-port", Config.Get("atreyu-req-port")},
             { "atreyu-sub-port", Config.Get("atreyu-sub-port")},
             { "atreyu-username", Config.Get("atreyu-username")},
-            { "atreyu-password", Config.Get("atreyu-password")}
+            { "atreyu-password", Config.Get("atreyu-password")},
+            { "atreyu-client-id", Config.Get("atreyu-client-id")},
+            { "atreyu-cash-balance", Config.Get("atreyu-cash-balance")}
         };
 
         /// <summary>
@@ -81,6 +83,8 @@ namespace QuantConnect.Atreyu
             var subscribePort = Read<int>(job.BrokerageData, "atreyu-sub-port", errors);
             var username = Read<string>(job.BrokerageData, "atreyu-username", errors);
             var password = Read<string>(job.BrokerageData, "atreyu-password", errors);
+            var clientId = Read<string>(job.BrokerageData, "atreyu-client-id", errors);
+            var cashBalance = Read<decimal>(job.BrokerageData, "atreyu-cash-balance", errors);
 
             if (errors.Count != 0)
             {
@@ -94,6 +98,8 @@ namespace QuantConnect.Atreyu
                 subscribePort, 
                 username, 
                 password,
+                clientId,
+                cashBalance,
                 algorithm);
 
             return brokerage;
