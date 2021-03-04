@@ -29,6 +29,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Lean\Tests\QuantConnect.Tests.csproj" />
     <ProjectReference Include="..\QuantConnect.Atreyu\QuantConnect.Atreyu.csproj" />
   </ItemGroup>
 </Project>

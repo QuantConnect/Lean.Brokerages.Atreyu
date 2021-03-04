@@ -35,7 +35,6 @@ namespace QuantConnect.Atreyu
 {
     public partial class AtreyuBrokerage : Brokerage
     {
-        private readonly IAlgorithm _algorithm;
         private readonly IOrderProvider _orderProvider;
         private readonly ZeroMQConnectionManager _zeroMQ;
         private readonly ISymbolMapper _symbolMapper;
@@ -44,6 +43,8 @@ namespace QuantConnect.Atreyu
         // Atreyu inputs
         private readonly string _clientId;
         private readonly decimal _cashBalance;
+        private readonly string _brokerMPID;
+        private readonly string _locateRqd;
 
         // Atreyu State Information
         private Client.Messages.Position[] _positions;
@@ -59,6 +60,14 @@ namespace QuantConnect.Atreyu
         /// </summary>
         /// <param name="algorithm">The algorithm instance</param>
         public AtreyuBrokerage(IAlgorithm algorithm)
+            : this(algorithm.Transactions, algorithm.Portfolio)
+        { }
+
+        /// <summary>
+        /// Creates a new <see cref="AtreyuBrokerage"/> from the specified values retrieving data from configuration file
+        /// </summary>
+        /// <param name="algorithm">The algorithm instance</param>
+        public AtreyuBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
             : this(Config.Get("atreyu-host"),
                 Config.GetInt("atreyu-req-port"),
                 Config.GetInt("atreyu-sub-port"),
@@ -66,7 +75,10 @@ namespace QuantConnect.Atreyu
                 Config.Get("atreyu-password"),
                 Config.Get("atreyu-client-id"),
                 Config.GetValue<decimal>("atreyu-cash-balance"),
-                algorithm)
+                Config.GetValue<string>("atreyu-broker-mpid"),
+                Config.GetValue<string>("atreyu-locate-rqd"),
+                orderProvider,
+                securityProvider)
         { }
 
         /// <summary>
@@ -79,6 +91,8 @@ namespace QuantConnect.Atreyu
         /// <param name="password">The login password</param>
         /// <param name="clientId">Assigned by Atreyu</param>
         /// <param name="cashBalance">User input, no FLIRT API endpoint to query this value</param>
+        /// <param name="brokerMPID">Broker MPID Required for short sale transactions</param>
+        /// <param name="locate">tells the broker that the client has located shares for the short sale</param>
         /// <param name="algorithm">The algorithm instance</param>
         public AtreyuBrokerage(
             string host,
@@ -88,11 +102,47 @@ namespace QuantConnect.Atreyu
             string password,
             string clientId,
             decimal cashBalance,
-            IAlgorithm algorithm) : base("Atreyu")
+            string brokerMPID,
+            string locate,
+            IAlgorithm algorithm) : this(host, requestPort, subscribePort, username, password, clientId, cashBalance, brokerMPID, locate, algorithm?.Transactions, algorithm?.Portfolio)
         {
-            if (algorithm == null)
+        }
+
+        /// <summary>
+        ///  Creates a new <see cref="AtreyuBrokerage"/> from the specified values
+        /// </summary>
+        /// <param name="host">Instance url</param>
+        /// <param name="requestPort">Port for request/reply (REQREP) messaging pattern</param>
+        /// <param name="subscribePort">Port for publish/subscribe (PUBSUB) messaging pattern</param>
+        /// <param name="username">The login user name</param>
+        /// <param name="password">The login password</param>
+        /// <param name="clientId">Assigned by Atreyu</param>
+        /// <param name="cashBalance">User input, no FLIRT API endpoint to query this value</param>
+        /// <param name="brokerMPID">Broker MPID Required for short sale transactions</param>
+        /// <param name="locate">tells the broker that the client has located shares for the short sale</param>
+        /// <param name="orderProvider">The algorithm order provider</param>
+        /// <param name="securityProvider">The algorithm security provider</param>
+        public AtreyuBrokerage(
+            string host,
+            int requestPort,
+            int subscribePort,
+            string username,
+            string password,
+            string clientId,
+            decimal cashBalance,
+            string brokerMPID,
+            string locate,
+            IOrderProvider orderProvider,
+            ISecurityProvider securityProvider) : base("Atreyu")
+        {
+            if (orderProvider == null)
             {
-                throw new ArgumentNullException(nameof(algorithm));
+                throw new ArgumentNullException(nameof(orderProvider));
+            }
+
+            if (securityProvider == null)
+            {
+                throw new ArgumentNullException(nameof(securityProvider));
             }
 
             if (string.IsNullOrEmpty(clientId))
@@ -102,9 +152,10 @@ namespace QuantConnect.Atreyu
 
             _clientId = clientId;
             _cashBalance = cashBalance;
-            _algorithm = algorithm;
-            _orderProvider = _algorithm.Transactions;
-            _securityProvider = _algorithm.Portfolio;
+            _brokerMPID = brokerMPID;
+            _locateRqd = locate;
+            _orderProvider = orderProvider;
+            _securityProvider = securityProvider;
             _symbolMapper = new AtreyuSymbolMapper();
 
             _zeroMQ = new ZeroMQConnectionManager(host, requestPort, subscribePort, username, password);
@@ -132,6 +183,7 @@ namespace QuantConnect.Atreyu
 
         public override List<Holding> GetAccountHoldings()
         {
+            return new List<Holding>();
             if (Log.DebuggingEnabled)
             {
                 Log.Debug("AtreyuBrokerage.GetAccountHoldings()");
@@ -166,14 +218,23 @@ namespace QuantConnect.Atreyu
 
             var request = new NewEquityOrderMessage()
             {
-                Side = ConvertDirection(order.Direction),
+                Side = ConvertDirection(order),
                 Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
                 ClientId = _clientId,
-                ClOrdID = Guid.NewGuid().ToString().Replace("-", string.Empty),
+                ClOrdID = GetNewOrdID(),
                 OrderQty = (int)order.AbsoluteQuantity,
+                //DeliverToCompID = "QC-CS-INET",
                 TimeInForce = ConvertTimeInForce(order.TimeInForce),
-                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
+                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture),
+                Account = "DEFAULT"
             };
+
+            if (request.Side.Equals("5") || request.Side.Equals("SELL_SHORT", StringComparison.OrdinalIgnoreCase))
+            {
+                //Broker MPID Required for short sale transactions.
+                request.LocateBrokerID = _brokerMPID;
+                request.LocateRqd = _locateRqd;
+            }
 
             switch (order.Type)
             {
@@ -256,7 +317,8 @@ namespace QuantConnect.Atreyu
 
             var request = new CancelReplaceEquityOrderMessage()
             {
-                ClOrdID = order.BrokerId.First(),
+                ClientId = _clientId,
+                ClOrdID = GetNewOrdID(),
                 OrderQty = (int)order.AbsoluteQuantity,
                 OrigClOrdID = order.BrokerId.First(),
                 TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
@@ -318,7 +380,8 @@ namespace QuantConnect.Atreyu
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(new CancelEquityOrderMessage()
                 {
-                    ClOrdID = order.BrokerId.First(),
+                    ClientId = _clientId,
+                    ClOrdID = GetNewOrdID(),
                     OrigClOrdID = order.BrokerId.First(),
                     TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
                 });

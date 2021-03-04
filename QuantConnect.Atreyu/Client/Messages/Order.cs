@@ -71,8 +71,14 @@ namespace QuantConnect.Atreyu.Client.Messages
             {
                 switch (Side.ToUpperInvariant())
                 {
-                    case "BUY": return OrderQty;
-                    case "SELL": return -OrderQty;
+                    case "BUY":
+                    case "1":
+                        return OrderQty;
+                    case "SELL":
+                    case "SELL_SHORT":
+                    case "2":
+                    case "5":
+                        return -OrderQty;
                     default:
                         throw new ArgumentException($"AtreyuBrokerage.Order: Unsupported trade direction type returned from brokerage: {Side}");
                 }

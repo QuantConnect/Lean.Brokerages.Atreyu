@@ -47,7 +47,7 @@ namespace QuantConnect.Atreyu.Client
 
         public event EventHandler<string> MessageRecieved;
 
-        public bool IsConnected => _connected;
+        public bool IsConnected => _connected && !string.IsNullOrEmpty(_sessionId);
 
         /// <summary>
         /// Creates ZeroMQ client
@@ -158,12 +158,6 @@ namespace QuantConnect.Atreyu.Client
         /// <returns>message from the ResponseSocket</returns>
         public string Send(RequestMessage message)
         {
-            if (!IsConnected)
-            {
-                Log.Error($"ZeroMQConnectionManager.Send(): connection has been disposed.");
-                return null;
-            }
-
             try
             {
                 // request, Unit Of Work pattern
@@ -172,9 +166,16 @@ namespace QuantConnect.Atreyu.Client
                 {
                     requestSocket.Connect(_host + $":{_requestPort}");
 
-                    if (message is SignedMessage)
+                    if (message is SignedMessage signedMessage)
                     {
-                        (message as SignedMessage).SessionId = _sessionId;
+                        if (string.IsNullOrEmpty(_sessionId))
+                        {
+                            Log.Error($"ZeroMQConnectionManager.Send(): Atreyu session cannot be null or empty for this request.");
+                            return null;
+                        }
+
+
+                        signedMessage.SessionId = _sessionId;
                     }
 
                     if (!requestSocket.TrySendFrame(

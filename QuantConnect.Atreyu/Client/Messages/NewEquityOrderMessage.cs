@@ -48,8 +48,8 @@ namespace QuantConnect.Atreyu.Client.Messages
         [JsonProperty(PropertyName = "99")]
         public decimal StopPx { get; set; }
 
-        [JsonProperty(PropertyName = "128", NullValueHandling = NullValueHandling.Ignore)]
-        public string DeliverToCompID { get; set; }
+        //[JsonProperty(PropertyName = "128", NullValueHandling = NullValueHandling.Ignore)]
+        //public string DeliverToCompID { get; set; }
 
         [JsonProperty(PropertyName = "100", NullValueHandling = NullValueHandling.Ignore)]
         public string ExDestination { get; set; }
@@ -68,5 +68,14 @@ namespace QuantConnect.Atreyu.Client.Messages
 
         [JsonProperty(PropertyName = "7552")]
         public string RoutingPolicy { get; set; }
+
+        [JsonProperty(PropertyName = "1")]
+        public string Account { get; set; }
+
+        [JsonProperty(PropertyName = "5700", NullValueHandling = NullValueHandling.Ignore)]
+        public string LocateBrokerID { get; set; }
+
+        [JsonProperty(PropertyName = "114", NullValueHandling = NullValueHandling.Ignore)]
+        public string LocateRqd { get; set; }
     }
 }

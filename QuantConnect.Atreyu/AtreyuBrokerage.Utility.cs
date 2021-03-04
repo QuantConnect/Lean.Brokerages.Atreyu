@@ -17,6 +17,7 @@ using System;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Orders.TimeInForces;
+using QuantConnect.Securities;
 
 namespace QuantConnect.Atreyu
 {
@@ -31,12 +32,14 @@ namespace QuantConnect.Atreyu
             switch (atreyuOrder.OrdType)
             {
                 case "MARKET":
+                case "1":
                     leanOrder = new MarketOrder(
                         symbol,
                         atreyuOrder.Quantity,
                         datetime);
                     break;
                 case "LIMIT":
+                case "2":
                     leanOrder = new LimitOrder(
                         symbol,
                         atreyuOrder.Quantity,
@@ -44,6 +47,7 @@ namespace QuantConnect.Atreyu
                         datetime);
                     break;
                 case "MARKETONCLOSE":
+                case "5":
                     leanOrder = new MarketOnCloseOrder(
                         symbol,
                         atreyuOrder.Quantity,
@@ -84,7 +88,7 @@ namespace QuantConnect.Atreyu
                 case DayTimeInForce day:
                     return "0";
                 case GoodTilCanceledTimeInForce gtc:
-                    //return "1";
+                //return "1";
                 default:
                     throw new ArgumentException("AtreyuBrokerage.ConvertTimeInForce: currently support only Day orders (TIF DAY). No DAY+/ GTX or GTC supported.");
             }
@@ -180,17 +184,20 @@ namespace QuantConnect.Atreyu
             }
         }
 
-        private string ConvertDirection(OrderDirection direction)
+        private string ConvertDirection(Order order)
         {
-            switch (direction)
+            var holdingQuantity = _securityProvider.GetHoldingsQuantity(order.Symbol);
+            switch (order.Direction)
             {
                 case OrderDirection.Buy: return "1";
-                case OrderDirection.Sell: return "2";
+                case OrderDirection.Sell: return (holdingQuantity >= order.AbsoluteQuantity ? "2" : "5");
 
                 // not sure how to map these guys
                 default:
-                    throw new ArgumentException($"AtreyuBrokerage.ConvertDirection: Unsupported order direction: {direction}");
+                    throw new ArgumentException($"AtreyuBrokerage.ConvertDirection: Unsupported order direction: {order.Direction}");
             }
         }
+
+        private string GetNewOrdID() => Guid.NewGuid().ToString().Replace("-", string.Empty);
     }
 }

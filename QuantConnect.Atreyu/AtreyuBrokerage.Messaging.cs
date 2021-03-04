@@ -22,6 +22,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using QuantConnect.Atreyu.Client.Messages;
+using Order = QuantConnect.Orders.Order;
 
 namespace QuantConnect.Atreyu
 {
@@ -96,25 +97,58 @@ namespace QuantConnect.Atreyu
                 return;
             }
 
-            var order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
+            var atreyuOrderId = report.OrigClOrdID ?? report.ClOrdID;
+            var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
             if (order != null)
             {
                 OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, $"Atreyu Order Event. Message: {report.Text}")
                 {
                     Status = ConvertExecType(report.ExecType)
                 });
+
+                if (ConvertExecType(report.ExecType) == OrderStatus.Submitted)
+                {
+                    _orders = _orders
+                        .Union(new[]
+                        {
+                            new Client.Messages.Order()
+                            {
+                                Symbol = order.Symbol.Value,
+                                TransactTime = report.TransactTime,
+                                OrdType = order.Type == OrderType.MarketOnClose
+                                    ? "MARKETONCLOSE"
+                                    : order.Type == OrderType.Limit
+                                        ? "LIMIT"
+                                        : "MARKET",
+                                Side = ConvertDirection(order),
+                                OrderQty = (int)order.AbsoluteQuantity,
+                                Price = order.Price,
+                                ClOrdID = order.BrokerId.First(),
+                                TimeInForce = ConvertTimeInForce(order.TimeInForce),
+                                OrdStatus = "NEW"
+                            }
+                        })
+                        .ToArray();
+                }
+                else if (ConvertExecType(report.ExecType) == OrderStatus.Canceled)
+                {
+                    _orders = _orders
+                        .Where(o => !order.BrokerId.Contains(o.ClOrdID))
+                        .ToArray();
+                }
             }
         }
 
         private void OnOrderFill(ExecutionReport report)
         {
-            var order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
             var fillingReport = report as FillOrderReport;
             if (fillingReport == null)
             {
                 throw new ArgumentException($"Received unexpected filling report format. Content: {JsonConvert.SerializeObject(report)}");
             }
 
+            var atreyuOrderId = report.OrigClOrdID ?? report.ClOrdID;
+            var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
             try
             {
                 if (order == null)
@@ -178,7 +212,13 @@ namespace QuantConnect.Atreyu
             }
             finally
             {
-                UnlockStream();
+                var timer = new System.Timers.Timer
+                {
+                    Interval = 7000
+                };
+                timer.Elapsed += (o, e) => UnlockStream();
+                timer.AutoReset = false;
+                timer.Start();
             }
         }
     }

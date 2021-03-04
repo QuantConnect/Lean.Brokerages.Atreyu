@@ -17,7 +17,7 @@ using Newtonsoft.Json;
 
 namespace QuantConnect.Atreyu.Client.Messages
 {
-    public class CancelOptionOrderMessage: CancelEquityOrderMessage
+    public class CancelOptionOrderMessage : CancelEquityOrderMessage
     {
         [JsonProperty(PropertyName = "200")]
         public string MaturityMonthYear { get; set; }

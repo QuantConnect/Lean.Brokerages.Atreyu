@@ -35,5 +35,7 @@ namespace QuantConnect.Atreyu.Client.Messages
 
         [JsonProperty(PropertyName = "554")]
         public string Password { get; internal set; }
+
+        //public int? MsgSeqNum { get; set; }
     }
 }
