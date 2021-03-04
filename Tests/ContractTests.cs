@@ -61,18 +61,30 @@ namespace QuantConnect.Atreyu.Tests
         public void DeserializeLogonResponseSuccess()
         {
             var json = @"{
-               ""sessionid"":""6070afc5-1ef0-4ced-bb45-92a2ed813849"",
-               ""positions"":[],
-               ""orders"":[],
-               ""MsgType"":""Logon"",
-               ""status"":0,
-               ""Text"":""FIX Connection OK"",
-               ""SendingTime"":""20210128-21:36:17.638""
+                ""sessionid"":""6070afc5-1ef0-4ced-bb45-92a2ed813849"",
+                ""positions"":[
+                   {
+                       ""ClientID"":""QC-TEST3"",
+                       ""Symbol"":""AGAPL"",
+                       ""SecurityType"":""CS"",
+                       ""PosType"":""TRADE_QTY"",
+                       ""LongQty"":0,
+                       ""ShortQty"":0
+                   }
+                ],
+                ""orders"":[],
+                ""MsgType"":""Logon"",
+                ""status"":0,
+                ""Text"":""FIX Connection OK"",
+                ""SendingTime"":""20210128-21:36:17.638""
             }";
 
             var response = JsonConvert.DeserializeObject<LogonResponseMessage>(json);
             Assert.AreEqual("6070afc5-1ef0-4ced-bb45-92a2ed813849", response.SessionId);
             Assert.AreEqual(0, response.Status);
+            Assert.IsNotNull(response.Positions);
+            Assert.IsNotNull(response.Orders);
+            Assert.IsNotEmpty(response.Positions);
             Assert.IsNotEmpty(response.Text);
         }
 

@@ -45,6 +45,10 @@ namespace QuantConnect.Atreyu
         private readonly string _clientId;
         private readonly decimal _cashBalance;
 
+        // Atreyu State Information
+        private Client.Messages.Position[] _positions;
+        private Client.Messages.Order[] _orders;
+
         /// <summary>
         /// Checks if the ZeroMQ is connected
         /// </summary>
@@ -113,24 +117,13 @@ namespace QuantConnect.Atreyu
             {
                 Log.Debug("AtreyuBrokerage.GetOpenOrders()");
             }
-            var response = _zeroMQ.Send<OpenOrdersResultMessage>(new QueryOpenOrdersMessage());
 
-            if (response == null)
-            {
-                throw new Exception("AtreyuBrokerage.GetOpenOrders: message was not sent.");
-            }
-
-            if (response.Status != 0)
-            {
-                throw new Exception($"AtreyuBrokerage.GetOpenOrders: request failed: [{(int)response.Status}] ErrorMessage: {response.Text}");
-            }
-
-            if (response.Orders?.Any() != true)
+            if (_orders?.Any() != true)
             {
                 return new List<Order>();
             }
 
-            var result = response.Orders
+            var result = _orders
                 .Select(ConvertOrder)
                 .ToList();
 
@@ -143,24 +136,13 @@ namespace QuantConnect.Atreyu
             {
                 Log.Debug("AtreyuBrokerage.GetAccountHoldings()");
             }
-            var response = _zeroMQ.Send<OpenPositionsResultMessage>(new QueryPositionsMessage());
 
-            if (response == null)
-            {
-                throw new Exception("AtreyuBrokerage.GetAccountHoldings: message was not sent.");
-            }
-
-            if (response.Status != 0)
-            {
-                throw new Exception($"AtreyuBrokerage.GetAccountHoldings: request failed: [{(int)response.Status}] ErrorMessage: {response.Text}");
-            }
-
-            if (response.Positions?.Any() != true)
+            if (_positions?.Any() != true)
             {
                 return new List<Holding>();
             }
 
-            return response.Positions
+            return _positions
                 .Select(ConvertHolding)
                 .ToList();
         }
@@ -380,7 +362,15 @@ namespace QuantConnect.Atreyu
         public override void Connect()
         {
             if (!_zeroMQ.IsConnected)
+            {
                 _zeroMQ.Connect();
+                var response = _zeroMQ.Logon();
+                if (response.Status == 0)
+                {
+                    _positions = response.Positions;
+                    _orders = response.Orders;
+                }
+            }
         }
 
         public override void Disconnect()
