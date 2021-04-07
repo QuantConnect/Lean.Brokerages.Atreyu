@@ -28,7 +28,7 @@ namespace QuantConnect.Atreyu.Certification
     /// <meta name="tag" content="using data" />
     /// <meta name="tag" content="using quantconnect" />
     /// <meta name="tag" content="trading and orders" />
-    public class AtreyuBrokerageAlgorithm : QCAlgorithm, IRegressionAlgorithmDefinition
+    public class AtreyuBrokerageAlgorithm : QCAlgorithm
     {
         /// <summary>
         /// Initialise the data and resolution required, as well as the cash and start-end dates for your algorithm. All algorithms must initialized.
