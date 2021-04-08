@@ -394,14 +394,6 @@ namespace QuantConnect.Atreyu
 
                 if (response.Status == 0)
                 {
-                    OnOrderEvent(new OrderEvent(
-                        order,
-                        Time.ParseFIXUtcTimestamp(response.TransactTime),
-                        OrderFee.Zero,
-                        "Atreyu Order Event")
-                    {
-                        Status = OrderStatus.CancelPending
-                    });
                     Log.Trace($"Cancel submitted successfully - OrderId: {order.Id}");
                     submitted = true;
                 }
