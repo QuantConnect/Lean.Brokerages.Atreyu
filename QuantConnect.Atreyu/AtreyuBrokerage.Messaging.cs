@@ -30,7 +30,7 @@ namespace QuantConnect.Atreyu
     {
         private volatile bool _streamLocked;
         private readonly ConcurrentQueue<ExecutionReport> _messageBuffer = new ConcurrentQueue<ExecutionReport>();
-        private readonly string[] _notMappedStatuses = { "PENDING_REPLACE", "DONE_FOR_DAY" };
+        private readonly string[] _notMappedStatuses = { "PENDING_REPLACE" };
 
         // MaxValue allows to prevent previous messages
         private int _lastMsgSeqNum = int.MaxValue;
