@@ -13,23 +13,12 @@
  * limitations under the License.
 */
 
-using Newtonsoft.Json;
-
 namespace QuantConnect.Atreyu.Client.Messages
 {
-    [JsonConverter(typeof(ExecutionReportJsonConverter))]
-    public class ExecutionReport: ResponseMessage
+    public class OrderCancelRejectReport : ExecutionReport
     {
-        public string MsgType { get; set; }
+        public int CxlRejReason { get; set; }
 
-        public string ExecType { get; set; }
-
-        public string ClOrdID { get; set; }
-
-        public string OrigClOrdID { get; set; }
-
-        public string TransactTime { get; set; }
-        
-        public string OrdStatus { get; set; }
+        public string CxlRejResponseTo { get; set; }
     }
 }

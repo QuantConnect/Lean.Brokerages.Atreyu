@@ -58,7 +58,7 @@ namespace QuantConnect.Atreyu.Certification
 
             Schedule.Add(new ScheduledEvent(
                 "Abort",
-                DateTime.UtcNow.AddMinutes(1),
+                DateTime.UtcNow.AddMinutes(3),
                 (s, date) => SetQuit(true)));
         }
 
@@ -89,7 +89,7 @@ namespace QuantConnect.Atreyu.Certification
                 return;
             }
 
-            if (orderEvent.Status == OrderStatus.Submitted)
+            if (orderEvent.Status == OrderStatus.Submitted && Executions.TryGetValue(orderEvent.Symbol.Value, out var ticker) && ticker.Executions == null)
             {
                 OnOrderSubmitted(orderEvent);
                 return;

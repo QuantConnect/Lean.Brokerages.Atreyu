@@ -20,7 +20,5 @@ namespace QuantConnect.Atreyu.Client.Messages
         public decimal LastPx { get; set; }
 
         public int LastShares { get; set; }
-
-        public string OrdStatus { get; set; }
     }
 }
