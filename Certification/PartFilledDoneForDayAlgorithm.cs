@@ -33,54 +33,12 @@ namespace QuantConnect.Atreyu.Certification
     /// <meta name="tag" content="using data" />
     /// <meta name="tag" content="using quantconnect" />
     /// <meta name="tag" content="trading and orders" />
-    public class PartFilledDoneForDayAlgorithm : QCAlgorithm
+    public class PartFilledDoneForDayAlgorithm : BasicTemplateAlgorithm
     {
-        private readonly string _ticker = "DAL";
-        Dictionary<string, Queue<decimal>> _executions = new Dictionary<string, Queue<decimal>>();
-
-        /// <summary>
-        /// Initialise the data and resolution required, as well as the cash and start-end dates for your algorithm. All algorithms must initialized.
-        /// </summary>
-        public override void Initialize()
+        protected override string TestCode { get; } = "D2";
+        protected override string[] Tickers
         {
-            DefaultOrderProperties = new AtreyuOrderProperties
-            {
-                PostOnly = true,
-                TimeInForce = TimeInForce.Day
-            };
-            SetCash(100000);
-            SetBrokerageModel(BrokerageName.Atreyu);
-
-            AddEquity(_ticker, Resolution.Second, Market.USA, extendedMarketHours: true);
-
-            Schedule.Add(new ScheduledEvent(
-                "Abort",
-                DateTime.UtcNow.AddMinutes(1),
-                (s, date) => SetQuit(true)));
-        }
-
-        /// <summary>
-        /// OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.
-        /// </summary>
-        /// <param name="data">Slice object keyed by symbol containing the stock data</param>
-        public override void OnData(Slice data)
-        {
-            if (_executions.ContainsKey(_ticker))
-            {
-                return;
-            }
-
-            foreach (var bar in data.Bars)
-            {
-                // find the front contract expiring no earlier than in 90 days
-                if (_executions.ContainsKey(bar.Key.Value))
-                {
-                    continue;
-                }
-
-                LimitOrder(bar.Key, 100, 5);
-                _executions.Add(bar.Key.Value, null);
-            }
+            get { return new[] { "DAL" }; }
         }
 
         /// <summary>
@@ -90,75 +48,14 @@ namespace QuantConnect.Atreyu.Certification
         /// Execution(X) Done for Day; 66
         /// </summary>
         /// <param name="orderEvent"></param>
-        public override void OnOrderEvent(OrderEvent orderEvent)
+        public override void OnOrderSubmitted(OrderEvent orderEvent)
         {
-            if (orderEvent.Status == OrderStatus.Submitted)
+            Executions[orderEvent.Symbol.Value].Executions = new Queue<ExecutionEvent>(new[]
             {
-                _executions[orderEvent.Symbol.Value] = new Queue<decimal>(new decimal[] { 33, 33, 0 });
-                return;
-            }
-
-            if (!_executions.TryGetValue(orderEvent.Symbol.Value, out var queue))
-            {
-                throw new Exception($"Unexpected Symbol arrived. Symbol {orderEvent.Symbol}");
-            }
-
-            if (queue.Count > 1 && orderEvent.Status != OrderStatus.PartiallyFilled)
-            {
-                throw new Exception($"Unexpected Order status. Expected {OrderStatus.PartiallyFilled}, but was {orderEvent.Status}");
-            }
-
-            if (queue.Count == 1 && orderEvent.Status != OrderStatus.Invalid)
-            {
-                throw new Exception($"Unexpected Order status. Expected {OrderStatus.Invalid}, but was {orderEvent.Status}");
-            }
-
-            var expected = queue.Dequeue();
-            if (orderEvent.FillQuantity != expected)
-            {
-                throw new Exception($"Unexpected Fill Quantity arrived. Expected {expected}, but was {orderEvent.FillQuantity}");
-            }
-
-            if (_executions.All(s => s.Value?.Count == 0))
-            {
-                Quit("Certification Test D2 Passed successfully");
-            }
+                new ExecutionEvent {Status = OrderStatus.PartiallyFilled, FillQuantity = 33},
+                new ExecutionEvent {Status = OrderStatus.PartiallyFilled, FillQuantity = 33},
+                new ExecutionEvent {Status = OrderStatus.Invalid, FillQuantity = 0}
+            });
         }
-
-        public override void OnEndOfAlgorithm()
-        {
-            if (!_executions.Any())
-            {
-                throw new Exception($"{_ticker} was not sent.");
-            }
-
-            if (_executions.Any(s => s.Value == null))
-            {
-                var keys = _executions
-                    .Where(s => s.Value == null)
-                    .Select(s => s.Key);
-
-                throw new Exception($"{string.Join(", ", keys)} were sent but not accepted by brokerage.");
-            }
-
-            var failed = _executions
-                .Where(s => s.Value.Any())
-                .Select(s => s.Key)
-                .ToArray();
-            if (failed.Any())
-            {
-                throw new Exception($"Following symbols were not processed properly: {string.Join(", ", failed)}.");
-            }
-        }
-
-        /// <summary>
-        /// This is used by the regression test system to indicate if the open source Lean repository has the required data to run this algorithm.
-        /// </summary>
-        public bool CanRunLocally { get; } = true;
-
-        /// <summary>
-        /// This is used by the regression test system to indicate which languages this algorithm is written in.
-        /// </summary>
-        public Language[] Languages { get; } = { Language.CSharp, Language.Python };
     }
 }

@@ -33,34 +33,18 @@ namespace QuantConnect.Atreyu.Certification
     /// <meta name="tag" content="using data" />
     /// <meta name="tag" content="using quantconnect" />
     /// <meta name="tag" content="trading and orders" />
-    public class CancelledOrderAlgorithm : QCAlgorithm
+    public class CancelledOrderAlgorithm : BasicTemplateAlgorithm
     {
-        private readonly string _ticker = "ORCL";
-        private readonly Dictionary<string, Queue<OrderStatus>> _executions = new Dictionary<string, Queue<OrderStatus>>();
-        private bool _cancelPending = false;
-        private int orderId = 0;
-
-        /// <summary>
-        /// Initialise the data and resolution required, as well as the cash and start-end dates for your algorithm. All algorithms must initialized.
-        /// </summary>
-        public override void Initialize()
+        protected override string TestCode { get; } = "D3";
+        protected override string[] Tickers
         {
-            DefaultOrderProperties = new AtreyuOrderProperties
+            get
             {
-                PostOnly = true,
-                TimeInForce = TimeInForce.Day
-            };
-            SetCash(100000);
-            SetBrokerageModel(BrokerageName.Atreyu);
-
-            AddEquity(_ticker, Resolution.Second, Market.USA, extendedMarketHours: true);
-
-            Schedule.Add(new ScheduledEvent(
-                "Abort",
-                DateTime.UtcNow.AddMinutes(1),
-                (s, date) => SetQuit(true)));
+                return new[] { "ORCL" };
+            }
         }
-        
+        private bool _cancelPending = false;
+
         /// <summary>
         /// OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.
         /// </summary>
@@ -69,20 +53,18 @@ namespace QuantConnect.Atreyu.Certification
         {
             foreach (var bar in data.Bars)
             {
-                // find the front contract expiring no earlier than in 90 days
-                if (_executions.TryGetValue(bar.Key.Value, out var queue))
+                if (Executions.TryGetValue(bar.Key.Value, out var symbol))
                 {
-                    if (queue?.Any() == true && !_cancelPending)
+                    if (symbol.Executions?.Any() == true && !_cancelPending)
                     {
-                        Transactions.CancelOrder(orderId);
+                        Transactions.CancelOrder(symbol.OrderId);
                         _cancelPending = true;
                     }
                     continue;
                 }
 
-                var ticketOrder = LimitOrder(bar.Key, 100, 5);
-                orderId = ticketOrder.OrderId;
-                _executions.Add(bar.Key.Value, null);
+                var ticket = LimitOrder(bar.Key, 100, 5);
+                Executions.Add(bar.Key.Value, new Execution(ticket));
             }
         }
 
@@ -91,72 +73,14 @@ namespace QuantConnect.Atreyu.Certification
         /// Execution(X)    Pending Cancel
         /// Execution(X)    Cancelled
         /// </summary>
-        /// <param name="orderEvent"></param>
-        public override void OnOrderEvent(OrderEvent orderEvent)
+        public override void OnOrderSubmitted(OrderEvent orderEvent)
         {
-            if (orderEvent.OrderId != orderId)
+            Executions[orderEvent.Symbol.Value].Executions = new Queue<ExecutionEvent>(new[]
             {
-                // ignore events not related to current order, i.e. open orders
-                return;
-            }
-
-            if (orderEvent.Status == OrderStatus.Submitted)
-            {
-                _executions[orderEvent.Symbol.Value] = new Queue<OrderStatus>(new[] { OrderStatus.CancelPending, OrderStatus.CancelPending, OrderStatus.Canceled });
-                return;
-            }
-
-            if (!_executions.TryGetValue(orderEvent.Symbol.Value, out var queue))
-            {
-                throw new Exception($"Unexpected Symbol has arrived. Symbol {orderEvent.Symbol}");
-            }
-
-            var expectedStatus = queue.Dequeue();
-            if (orderEvent.Status != expectedStatus)
-            {
-                throw new Exception($"Unexpected Order status. Expected {expectedStatus}, but was {orderEvent.Status}");
-            }
-
-            if (_executions.All(s => s.Value?.Count == 0))
-            {
-                Quit("Certification Test D3 Passed successfully");
-            }
+                new ExecutionEvent {Status = OrderStatus.CancelPending},
+                new ExecutionEvent {Status = OrderStatus.CancelPending},
+                new ExecutionEvent {Status = OrderStatus.Canceled}
+            });
         }
-
-        public override void OnEndOfAlgorithm()
-        {
-            if (_executions.Count != 1)
-            {
-                throw new Exception($"{_ticker} was not sent.");
-            }
-
-            if (_executions.Any(s => s.Value == null))
-            {
-                var keys = _executions
-                    .Where(s => s.Value == null)
-                    .Select(s => s.Key);
-
-                throw new Exception($"{string.Join(", ", keys)} were sent but not accepted by brokerage.");
-            }
-
-            var notFilled = _executions
-                .Where(s => s.Value.Any())
-                .Select(s => s.Key)
-                .ToArray();
-            if (notFilled.Any())
-            {
-                throw new Exception($"Following symbol was not processed properly: {string.Join(", ", notFilled)}. Expected: Cancelled");
-            }
-        }
-
-        /// <summary>
-        /// This is used by the regression test system to indicate if the open source Lean repository has the required data to run this algorithm.
-        /// </summary>
-        public bool CanRunLocally { get; } = true;
-
-        /// <summary>
-        /// This is used by the regression test system to indicate which languages this algorithm is written in.
-        /// </summary>
-        public Language[] Languages { get; } = { Language.CSharp, Language.Python };
     }
 }
