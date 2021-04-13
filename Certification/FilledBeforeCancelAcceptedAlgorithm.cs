@@ -27,20 +27,20 @@ using QuantConnect.Scheduling;
 namespace QuantConnect.Atreyu.Certification
 {
     /// <summary>
-    /// D4b - Request cancel of part-filled order
-    /// Partial fills received before cancel is rejected
+    /// D5 - Order fills before cancel accepted
+    /// Pending cancel is returned
     /// </summary>
     /// <meta name="tag" content="using data" />
     /// <meta name="tag" content="using quantconnect" />
     /// <meta name="tag" content="trading and orders" />
-    public class PartFilledOrderCancelRejectedImmediatellyAlgorithm : BasicTemplateAlgorithm
+    public class FilledBeforeCancelAcceptedAlgorithm : BasicTemplateAlgorithm
     {
-        protected override string TestCode { get; } = "D4b";
+        protected override string TestCode { get; } = "D5";
         protected override string[] Tickers
         {
             get
             {
-                return new[] { "SQ" };
+                return new[] { "PRU" };
             }
         }
         private bool _cancelPending = false;
@@ -78,8 +78,9 @@ namespace QuantConnect.Atreyu.Certification
                 new ExecutionEvent {Status = OrderStatus.PartiallyFilled, FillQuantity = 25},
                 new ExecutionEvent {Status = OrderStatus.CancelPending},
                 new ExecutionEvent {Status = OrderStatus.PartiallyFilled, FillQuantity = 25},
-                new ExecutionEvent {Status = OrderStatus.PartiallyFilled},
-                new ExecutionEvent {Status = OrderStatus.Filled, FillQuantity = 50}
+                new ExecutionEvent {Status = OrderStatus.CancelPending},
+                new ExecutionEvent {Status = OrderStatus.Filled, FillQuantity = 50},
+                new ExecutionEvent {Status = OrderStatus.Filled}
             });
         }
 

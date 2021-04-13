@@ -27,20 +27,20 @@ using QuantConnect.Scheduling;
 namespace QuantConnect.Atreyu.Certification
 {
     /// <summary>
-    /// D4b - Request cancel of part-filled order
-    /// Partial fills received before cancel is rejected
+    /// D5a - Order fills before cancel accepted
+    /// Cancel rejected immediatelly
     /// </summary>
     /// <meta name="tag" content="using data" />
     /// <meta name="tag" content="using quantconnect" />
     /// <meta name="tag" content="trading and orders" />
-    public class PartFilledOrderCancelRejectedImmediatellyAlgorithm : BasicTemplateAlgorithm
+    public class FilledBeforeCancelRejectedImmediatellyAlgorithm : BasicTemplateAlgorithm
     {
-        protected override string TestCode { get; } = "D4b";
+        protected override string TestCode { get; } = "D5a";
         protected override string[] Tickers
         {
             get
             {
-                return new[] { "SQ" };
+                return new[] { "DB" };
             }
         }
         private bool _cancelPending = false;
