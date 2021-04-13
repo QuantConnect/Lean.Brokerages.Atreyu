@@ -49,7 +49,7 @@ namespace QuantConnect.Atreyu.Certification
                 PostOnly = true,
                 TimeInForce = TimeInForce.Day
             };
-            SetCash(100000);
+            SetCash(1000000);
             SetBrokerageModel(BrokerageName.Atreyu);
             foreach (var ticker in Tickers)
             {
@@ -70,6 +70,9 @@ namespace QuantConnect.Atreyu.Certification
         {
             foreach (var bar in data.Bars)
             {
+                if (!Tickers.Contains(bar.Key.Value))
+                    continue;
+
                 // find the front contract expiring no earlier than in 90 days
                 if (Executions.ContainsKey(bar.Key.Value))
                 {

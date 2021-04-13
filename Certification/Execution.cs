@@ -9,16 +9,17 @@ namespace QuantConnect.Atreyu.Certification
 {
     public class Execution
     {
-        public int OrderId { get; set; }
+        public OrderTicket Ticket { get; }
 
-        public string Symbol { get; set; }
+        public int OrderId => Ticket.OrderId;
+
+        public string Symbol => Ticket.Symbol.Value;
 
         public Queue<ExecutionEvent> Executions { get; set; }
 
         public Execution(OrderTicket ticket)
         {
-            OrderId = ticket.OrderId;
-            Symbol = ticket.Symbol.Value;
+            Ticket = ticket;
         }
 
         public void Assert(OrderEvent orderEvent)

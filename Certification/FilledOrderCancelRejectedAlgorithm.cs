@@ -53,6 +53,9 @@ namespace QuantConnect.Atreyu.Certification
         {
             foreach (var bar in data.Bars)
             {
+                if (!Tickers.Contains(bar.Key.Value))
+                    continue;
+
                 if (Executions.TryGetValue(bar.Key.Value, out var symbol))
                 {
                     if (symbol.Executions?.Any() == true && !_cancelPending)

@@ -27,20 +27,20 @@ using QuantConnect.Scheduling;
 namespace QuantConnect.Atreyu.Certification
 {
     /// <summary>
-    /// D3b - Request cancel of unfilled order
-    /// Cancel request rejected; no pending cancel sent
+    /// D4a - Request cancel of part-filled order
+    /// Partial fills received before cancel is rejected
     /// </summary>
     /// <meta name="tag" content="using data" />
     /// <meta name="tag" content="using quantconnect" />
     /// <meta name="tag" content="trading and orders" />
-    public class FilledOrderCancelRejectedNoPendingCancelSentAlgorithm : BasicTemplateAlgorithm
+    public class PartFilledOrderCancelRejectedImmediatellyAlgorithm : BasicTemplateAlgorithm
     {
-        protected override string TestCode { get; } = "D3b";
+        protected override string TestCode { get; } = "D4b";
         protected override string[] Tickers
         {
             get
             {
-                return new[] { "DLTR" };
+                return new[] { "SQ" };
             }
         }
         private bool _cancelPending = false;
@@ -58,7 +58,7 @@ namespace QuantConnect.Atreyu.Certification
 
                 if (Executions.TryGetValue(bar.Key.Value, out var symbol))
                 {
-                    if (symbol.Executions?.Any() == true && !_cancelPending)
+                    if (symbol.Executions?.Any() == true && !_cancelPending && symbol.Ticket.QuantityFilled == 25)
                     {
                         Transactions.CancelOrder(symbol.OrderId);
                         _cancelPending = true;
@@ -70,19 +70,30 @@ namespace QuantConnect.Atreyu.Certification
                 Executions.Add(bar.Key.Value, new Execution(ticket));
             }
         }
-
-        /// <summary>
-        /// LEAN(internal)  Pending Cancel, by BrokerageTransactionHandler.HandleOrderEvent
-        /// Execution(X)    Cancelled
-        /// </summary>
+        
         public override void OnOrderSubmitted(OrderEvent orderEvent)
         {
             Executions[orderEvent.Symbol.Value].Executions = new Queue<ExecutionEvent>(new[]
             {
+                new ExecutionEvent {Status = OrderStatus.PartiallyFilled, FillQuantity = 25},
                 new ExecutionEvent {Status = OrderStatus.CancelPending},
-                new ExecutionEvent {Status = OrderStatus.Submitted},
-                new ExecutionEvent {Status = OrderStatus.Filled, FillQuantity = 100}
+                new ExecutionEvent {Status = OrderStatus.PartiallyFilled, FillQuantity = 25},
+                new ExecutionEvent {Status = OrderStatus.PartiallyFilled},
+                new ExecutionEvent {Status = OrderStatus.Filled, FillQuantity = 50}
             });
+        }
+
+        public override void OnEndOfAlgorithm()
+        {
+            base.OnEndOfAlgorithm();
+
+            foreach (var exec in Executions.Values)
+            {
+                if (exec.Ticket.QuantityFilled != 100)
+                {
+                    throw new Exception($"Filled Quantity {exec.Ticket.QuantityFilled}; expected 100.");
+                }
+            }
         }
     }
 }
