@@ -138,7 +138,7 @@ namespace QuantConnect.Atreyu
             {
                 OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, $"Atreyu Order Event. Message: {report.Text}")
                 {
-                    Status = ConvertExecType(report.ExecType)
+                    Status = ConvertOrderStatus(report.OrdStatus)
                 });
 
                 if (ConvertExecType(report.ExecType) == OrderStatus.Submitted)
