@@ -220,6 +220,7 @@ namespace QuantConnect.Atreyu
             var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
             if (order != null)
             {
+                order.BrokerId.Remove(report.ClOrdID);
                 OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero,
                     $"Atreyu Order Event. Message: {report.Text}, reason: {report.CxlRejReason}.")
                 {
