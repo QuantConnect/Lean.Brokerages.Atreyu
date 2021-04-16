@@ -305,11 +305,6 @@ namespace QuantConnect.Atreyu
                 throw new ArgumentNullException(nameof(order.BrokerId), "AtreyuBrokerage.UpdateOrder: There is no brokerage id to be updated for this order.");
             }
 
-            if (order.BrokerId.Count > 1)
-            {
-                throw new NotSupportedException("AtreyuBrokerage.UpdateOrder: Multiple orders update not supported. Please cancel and re-create.");
-            }
-
             if (order.AbsoluteQuantity % 1 != 0)
             {
                 throw new ArgumentException(
@@ -321,7 +316,7 @@ namespace QuantConnect.Atreyu
                 ClientId = _clientId,
                 ClOrdID = GetNewOrdID(),
                 OrderQty = (int)order.AbsoluteQuantity,
-                OrigClOrdID = order.BrokerId.First(),
+                OrigClOrdID = order.BrokerId.Last(),
                 TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
             };
 
@@ -345,7 +340,9 @@ namespace QuantConnect.Atreyu
                     // Atreyu status flow has an intermediate PENDING_REPLACE, but Lean doesn't
                     // skip order event on REQUEST-RESPONSE response
                     // wait and fire event when receive confirmation from PUBLISH-SUBSCRIBE
-
+                    // OrigClOrdID - ClOrdID of the previous order (not necessarily the initial order)
+                    // keep all chain
+                    order.BrokerId.Add(response.ClOrdID);
                     Log.Trace($"Replace submitted successfully - OrderId: {order.Id}");
                     submitted = true;
                 }
@@ -383,7 +380,7 @@ namespace QuantConnect.Atreyu
                 {
                     ClientId = _clientId,
                     ClOrdID = GetNewOrdID(),
-                    OrigClOrdID = order.BrokerId.First(),
+                    OrigClOrdID = order.BrokerId.Last(),
                     TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
                 });
 
