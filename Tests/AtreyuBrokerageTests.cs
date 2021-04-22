@@ -88,14 +88,14 @@ namespace QuantConnect.Atreyu.Tests
         /// <summary>
         /// Gets the default order quantity
         /// </summary>
-        protected override decimal GetDefaultQuantity() =>  5;
+        protected override decimal GetDefaultQuantity() => 5;
 
         private static TestCaseData[] CancelOrderParameters => new[]
         {
             new TestCaseData(new MarketOrderTestParameters(ORCLSymbol, new OrderProperties{TimeInForce = TimeInForce.Day})).SetName("MarketOrder"),   // D1
             new TestCaseData(new LimitOrderTestParameters(ORCLSymbol, 100m, 10m, new OrderProperties{TimeInForce = TimeInForce.Day})).SetName("LimitOrder")     //D3
         };
-        
+
         // GE is shortable; placed 100 shares
         // Both Market and Limit orders executed immediatelly according to D1
         private static TestCaseData[] FilledParameters => new[]
@@ -211,7 +211,7 @@ namespace QuantConnect.Atreyu.Tests
         public void ShortRejected(OrderTestParameters parameters)
         {
             PlaceOrderWaitForStatus(
-                parameters.CreateShortOrder(GetDefaultQuantity()), 
+                parameters.CreateShortOrder(GetDefaultQuantity()),
                 OrderStatus.Invalid,
                 allowFailedSubmission: true);
         }
@@ -231,6 +231,35 @@ namespace QuantConnect.Atreyu.Tests
 
             // still ignore 
             Assert.IsEmpty(Brokerage.GetAccountHoldings());
+        }
+
+        [Test]
+        public void ParseUserInput()
+        {
+            var brokerage = new AtreyuBrokerage(
+                "tcp://trademachine-nlb-c049c393793491c1.elb.us-east-1.amazonaws.com",
+                24686,
+                24687,
+                "QUANTCONNECT",
+                "udpWuzLTH7GDe9bN",
+                "QC-TEST1",
+                "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]",
+                "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10, \"Type\":1 }]",
+                "ABCD",
+                "N",
+                new OrderProvider(),
+                new SecurityProvider());
+
+            Assert.AreEqual(2, brokerage.GetCashBalance().Count);
+
+            Assert.AreEqual(1, brokerage.GetAccountHoldings().Count);
+            var holding = brokerage.GetAccountHoldings().FirstOrDefault();
+            Assert.NotNull(holding);
+            Assert.AreEqual(5, holding.AveragePrice);
+            Assert.AreEqual(33, holding.Quantity);
+            Assert.AreEqual("GME", holding.Symbol.Value);
+            Assert.AreEqual(10, holding.MarketPrice);
+            Assert.AreEqual(SecurityType.Equity, holding.Type);
         }
     }
 }

@@ -61,6 +61,7 @@ namespace QuantConnect.Atreyu
             { "atreyu-password", Config.Get("atreyu-password")},
             { "atreyu-client-id", Config.Get("atreyu-client-id")},
             { "atreyu-cash-balance", Config.Get("atreyu-cash-balance")},
+            { "atreyu-holdings", Config.Get("atreyu-holdings")},
             { "atreyu-broker-mpid", Config.Get("atreyu-broker-mpid")},
             { "atreyu-locate-rqd", Config.Get("atreyu-locate-rqd")}
         };
@@ -87,6 +88,7 @@ namespace QuantConnect.Atreyu
             var password = Read<string>(job.BrokerageData, "atreyu-password", errors);
             var clientId = Read<string>(job.BrokerageData, "atreyu-client-id", errors);
             var cashBalance = Read<string>(job.BrokerageData, "atreyu-cash-balance", errors);
+            var holdings = Read<string>(job.BrokerageData, "atreyu-holdings", errors);
             var brokerMPID = Read<string>(job.BrokerageData, "atreyu-broker-mpid", errors);
             var locate = Read<string>(job.BrokerageData, "atreyu-locate-rqd", errors);
 
@@ -104,6 +106,7 @@ namespace QuantConnect.Atreyu
                 password,
                 clientId,
                 cashBalance,
+                holdings,
                 brokerMPID,
                 locate,
                 algorithm);

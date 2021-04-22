@@ -44,6 +44,7 @@ namespace QuantConnect.Atreyu
         // Atreyu inputs
         private readonly string _clientId;
         private readonly List<CashAmount> _cashBalance;
+        private readonly List<Holding> _holdings;
         private readonly string _brokerMPID;
         private readonly string _locateRqd;
 
@@ -76,6 +77,7 @@ namespace QuantConnect.Atreyu
                 Config.Get("atreyu-password"),
                 Config.Get("atreyu-client-id"),
                 Config.GetValue<string>("atreyu-cash-balance"),
+                Config.GetValue<string>("atreyu-holdings"),
                 Config.GetValue<string>("atreyu-broker-mpid"),
                 Config.GetValue<string>("atreyu-locate-rqd"),
                 orderProvider,
@@ -92,6 +94,7 @@ namespace QuantConnect.Atreyu
         /// <param name="password">The login password</param>
         /// <param name="clientId">Assigned by Atreyu</param>
         /// <param name="cashBalance">User input, no FLIRT API endpoint to query this value</param>
+        /// <param name="holdings">User input, FLIRT API endpoint does not provide Avg price</param>
         /// <param name="brokerMPID">Broker MPID Required for short sale transactions</param>
         /// <param name="locate">tells the broker that the client has located shares for the short sale</param>
         /// <param name="algorithm">The algorithm instance</param>
@@ -103,9 +106,10 @@ namespace QuantConnect.Atreyu
             string password,
             string clientId,
             string cashBalance,
+            string holdings,
             string brokerMPID,
             string locate,
-            IAlgorithm algorithm) : this(host, requestPort, subscribePort, username, password, clientId, cashBalance, brokerMPID, locate, algorithm?.Transactions, algorithm?.Portfolio)
+            IAlgorithm algorithm) : this(host, requestPort, subscribePort, username, password, clientId, cashBalance, holdings, brokerMPID, locate, algorithm?.Transactions, algorithm?.Portfolio)
         {
         }
 
@@ -119,6 +123,7 @@ namespace QuantConnect.Atreyu
         /// <param name="password">The login password</param>
         /// <param name="clientId">Assigned by Atreyu</param>
         /// <param name="cashBalance">User input, no FLIRT API endpoint to query this value</param>
+        /// <param name="holdings">User input, FLIRT API endpoint does not provide Avg price</param>
         /// <param name="brokerMPID">Broker MPID Required for short sale transactions</param>
         /// <param name="locate">tells the broker that the client has located shares for the short sale</param>
         /// <param name="orderProvider">The algorithm order provider</param>
@@ -131,6 +136,7 @@ namespace QuantConnect.Atreyu
             string password,
             string clientId,
             string cashBalance,
+            string holdings,
             string brokerMPID,
             string locate,
             IOrderProvider orderProvider,
@@ -153,6 +159,7 @@ namespace QuantConnect.Atreyu
 
             _clientId = clientId;
             _cashBalance = JsonConvert.DeserializeObject<List<CashAmount>>(cashBalance);
+            _holdings = JsonConvert.DeserializeObject<List<Holding>>(holdings);
             _brokerMPID = brokerMPID;
             _locateRqd = locate;
             _orderProvider = orderProvider;
@@ -184,20 +191,12 @@ namespace QuantConnect.Atreyu
 
         public override List<Holding> GetAccountHoldings()
         {
-            return new List<Holding>();
             if (Log.DebuggingEnabled)
             {
                 Log.Debug("AtreyuBrokerage.GetAccountHoldings()");
             }
 
-            if (_positions?.Any() != true)
-            {
-                return new List<Holding>();
-            }
-
-            return _positions
-                .Select(ConvertHolding)
-                .ToList();
+            return _holdings;
         }
 
         public override List<CashAmount> GetCashBalance()
