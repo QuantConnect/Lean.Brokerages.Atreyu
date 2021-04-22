@@ -30,6 +30,7 @@ using QuantConnect.Securities;
 using QuantConnect.Util;
 using HistoryRequest = QuantConnect.Data.HistoryRequest;
 using Order = QuantConnect.Orders.Order;
+using Newtonsoft.Json;
 
 namespace QuantConnect.Atreyu
 {
@@ -42,7 +43,7 @@ namespace QuantConnect.Atreyu
 
         // Atreyu inputs
         private readonly string _clientId;
-        private readonly decimal _cashBalance;
+        private readonly List<CashAmount> _cashBalance;
         private readonly string _brokerMPID;
         private readonly string _locateRqd;
 
@@ -74,7 +75,7 @@ namespace QuantConnect.Atreyu
                 Config.Get("atreyu-username"),
                 Config.Get("atreyu-password"),
                 Config.Get("atreyu-client-id"),
-                Config.GetValue<decimal>("atreyu-cash-balance"),
+                Config.GetValue<string>("atreyu-cash-balance"),
                 Config.GetValue<string>("atreyu-broker-mpid"),
                 Config.GetValue<string>("atreyu-locate-rqd"),
                 orderProvider,
@@ -101,7 +102,7 @@ namespace QuantConnect.Atreyu
             string username,
             string password,
             string clientId,
-            decimal cashBalance,
+            string cashBalance,
             string brokerMPID,
             string locate,
             IAlgorithm algorithm) : this(host, requestPort, subscribePort, username, password, clientId, cashBalance, brokerMPID, locate, algorithm?.Transactions, algorithm?.Portfolio)
@@ -129,7 +130,7 @@ namespace QuantConnect.Atreyu
             string username,
             string password,
             string clientId,
-            decimal cashBalance,
+            string cashBalance,
             string brokerMPID,
             string locate,
             IOrderProvider orderProvider,
@@ -151,7 +152,7 @@ namespace QuantConnect.Atreyu
             }
 
             _clientId = clientId;
-            _cashBalance = cashBalance;
+            _cashBalance = JsonConvert.DeserializeObject<List<CashAmount>>(cashBalance);
             _brokerMPID = brokerMPID;
             _locateRqd = locate;
             _orderProvider = orderProvider;
@@ -205,7 +206,8 @@ namespace QuantConnect.Atreyu
             {
                 Log.Debug("AtreyuBrokerage.GetCashBalance()");
             }
-            return new List<CashAmount>() { new CashAmount(_cashBalance, "USD") };
+
+            return _cashBalance;
         }
 
         public override bool PlaceOrder(Order order)

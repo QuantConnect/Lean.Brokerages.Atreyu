@@ -86,7 +86,7 @@ namespace QuantConnect.Atreyu
             var username = Read<string>(job.BrokerageData, "atreyu-username", errors);
             var password = Read<string>(job.BrokerageData, "atreyu-password", errors);
             var clientId = Read<string>(job.BrokerageData, "atreyu-client-id", errors);
-            var cashBalance = Read<decimal>(job.BrokerageData, "atreyu-cash-balance", errors);
+            var cashBalance = Read<string>(job.BrokerageData, "atreyu-cash-balance", errors);
             var brokerMPID = Read<string>(job.BrokerageData, "atreyu-broker-mpid", errors);
             var locate = Read<string>(job.BrokerageData, "atreyu-locate-rqd", errors);
 
