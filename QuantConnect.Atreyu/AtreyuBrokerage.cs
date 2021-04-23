@@ -428,7 +428,7 @@ namespace QuantConnect.Atreyu
             if (!_zeroMQ.IsConnected)
             {
                 _zeroMQ.Connect();
-                var response = _zeroMQ.Logon();
+                var response = _zeroMQ.Logon(_lastMsgSeqNum);
                 if (response.Status == 0)
                 {
                     _positions = response.Positions;

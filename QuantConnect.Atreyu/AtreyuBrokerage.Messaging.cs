@@ -32,6 +32,9 @@ namespace QuantConnect.Atreyu
         private readonly ConcurrentQueue<ExecutionReport> _messageBuffer = new ConcurrentQueue<ExecutionReport>();
         private readonly string[] _notMappedStatuses = { "PENDING_REPLACE", "DONE_FOR_DAY" };
 
+        // MaxValue allows to prevent previous messages
+        private int _lastMsgSeqNum = int.MaxValue;
+        private bool _resetting = false;
         public void OnMessage(string message)
         {
             var token = JObject.Parse(message);
@@ -44,6 +47,28 @@ namespace QuantConnect.Atreyu
             if (Log.DebuggingEnabled)
             {
                 Log.Debug(message);
+            }
+
+            var newMsgSeqNum = token.Value<int>("MsgSeqNum");
+            if (_lastMsgSeqNum == int.MaxValue || (_lastMsgSeqNum + 1 == newMsgSeqNum))
+            {
+                _resetting = false;
+                _lastMsgSeqNum = token.Value<int>("MsgSeqNum");
+            }
+            else
+            {
+                if (!_resetting && (_lastMsgSeqNum + 1 < newMsgSeqNum))
+                {
+                    var response = _zeroMQ.Logon(_lastMsgSeqNum);
+                    if (response.Status != 0)
+                    {
+                        throw new Exception("Could not re-login to Atreyu.");
+                    }
+
+                    _resetting = true;
+                    _messageBuffer.Clear();
+                }
+                return;
             }
 
             // we can ignore not-execution messages

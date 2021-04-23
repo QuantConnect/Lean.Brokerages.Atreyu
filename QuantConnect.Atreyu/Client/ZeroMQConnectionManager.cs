@@ -138,9 +138,9 @@ namespace QuantConnect.Atreyu.Client
         /// The state information returned will include all current open orders as well as position information by account, symbol for thecurrent trading day
         /// </summary>
         /// <returns>state information on your trading for the current trading day</returns>
-        public LogonResponseMessage Logon()
+        public LogonResponseMessage Logon(int start)
         {
-            var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password));
+            var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password) { MsgSeqNum = start });
             if (response.Status != 0)
             {
                 throw new Exception(
