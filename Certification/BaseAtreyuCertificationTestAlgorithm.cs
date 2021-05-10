@@ -86,12 +86,6 @@ namespace QuantConnect.Atreyu.Certification
 
         public override void OnOrderEvent(OrderEvent orderEvent)
         {
-            // ignore symbols from previous run (AMG replay)
-            if (!Executions.ContainsKey(orderEvent.Symbol.Value))
-            {
-                return;
-            }
-
             if (orderEvent.Status == OrderStatus.Submitted && Executions.TryGetValue(orderEvent.Symbol.Value, out var ticker) && ticker.Executions == null)
             {
                 OnOrderSubmitted(orderEvent);
