@@ -237,13 +237,7 @@ namespace QuantConnect.Atreyu
             }
             finally
             {
-                var timer = new System.Timers.Timer
-                {
-                    Interval = 7000
-                };
-                timer.Elapsed += (o, e) => UnlockStream();
-                timer.AutoReset = false;
-                timer.Start();
+                UnlockStream();
             }
         }
     }
