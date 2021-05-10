@@ -139,33 +139,30 @@ namespace QuantConnect.Atreyu
 
                 if (ConvertExecType(report.ExecType) == OrderStatus.Submitted)
                 {
-                    _orders = _orders
-                        .Union(new[]
+                    _orders.Add(
+                        new Client.Messages.Order()
                         {
-                            new Client.Messages.Order()
-                            {
-                                Symbol = order.Symbol.Value,
-                                TransactTime = report.TransactTime,
-                                OrdType = order.Type == OrderType.MarketOnClose
-                                    ? "MARKETONCLOSE"
-                                    : order.Type == OrderType.Limit
-                                        ? "LIMIT"
-                                        : "MARKET",
-                                Side = ConvertDirection(order),
-                                OrderQty = (int)order.AbsoluteQuantity,
-                                Price = order.Price,
-                                ClOrdID = order.BrokerId.First(),
-                                TimeInForce = ConvertTimeInForce(order.TimeInForce),
-                                OrdStatus = "NEW"
-                            }
-                        })
-                        .ToArray();
+                            Symbol = order.Symbol.Value,
+                            TransactTime = report.TransactTime,
+                            OrdType = order.Type == OrderType.MarketOnClose
+                                ? "MARKETONCLOSE"
+                                : order.Type == OrderType.Limit
+                                    ? "LIMIT"
+                                    : "MARKET",
+                            Side = ConvertDirection(order),
+                            OrderQty = (int)order.AbsoluteQuantity,
+                            Price = order.Price,
+                            ClOrdID = order.BrokerId.First(),
+                            TimeInForce = ConvertTimeInForce(order.TimeInForce),
+                            OrdStatus = "NEW"
+
+                        });
                 }
                 else if (ConvertExecType(report.ExecType) == OrderStatus.Canceled)
                 {
                     _orders = _orders
                         .Where(o => !order.BrokerId.Contains(o.ClOrdID))
-                        .ToArray();
+                        .ToList();
                 }
             }
         }

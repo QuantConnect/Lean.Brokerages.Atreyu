@@ -49,8 +49,8 @@ namespace QuantConnect.Atreyu
         private readonly string _locateRqd;
 
         // Atreyu State Information
-        private Client.Messages.Position[] _positions;
-        private Client.Messages.Order[] _orders;
+        private List<Client.Messages.Position> _positions;
+        private List<Client.Messages.Order> _orders;
 
         /// <summary>
         /// Checks if the ZeroMQ is connected
@@ -431,8 +431,8 @@ namespace QuantConnect.Atreyu
                 var response = _zeroMQ.Logon(_lastMsgSeqNum);
                 if (response.Status == 0)
                 {
-                    _positions = response.Positions;
-                    _orders = response.Orders;
+                    _positions = response.Positions.ToList();
+                    _orders = response.Orders.ToList();
                 }
             }
         }
