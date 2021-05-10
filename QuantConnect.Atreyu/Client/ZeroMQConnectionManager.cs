@@ -74,18 +74,12 @@ namespace QuantConnect.Atreyu.Client
         public void Connect()
         {
             // subscriber
-            if (Log.DebuggingEnabled)
-            {
-                Log.Debug("Subscriber socket connecting...");
-            }
+            Log.Debug("Subscriber socket connecting...");
 
             _subscribeSocket.Connect(_host + $":{_subscribePort}");
             _subscribeSocket.SubscribeToAnyTopic();
 
-            if (Log.DebuggingEnabled)
-            {
-                Log.Debug("Subscriber socket connected");
-            }
+            Log.Debug("Subscriber socket connected");
 
             _cancellationTokenSource = new CancellationTokenSource();
             var token = _cancellationTokenSource.Token;
@@ -114,10 +108,8 @@ namespace QuantConnect.Atreyu.Client
                         Log.Error($"ZeroMQConnectionManager.PUBSUB(): error occurs. Message: {e.Message}");
                     }
                 }
-                if (Log.DebuggingEnabled)
-                {
-                    Log.Debug("ZeroMQConnectionManager: stopped polling messages");
-                }
+
+                Log.Trace("ZeroMQConnectionManager: stopped polling messages");
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
             _connected = true;
