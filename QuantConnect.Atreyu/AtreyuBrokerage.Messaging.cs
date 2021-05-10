@@ -49,14 +49,18 @@ namespace QuantConnect.Atreyu
                 Log.Debug(message);
             }
 
+            // Atreyu Message Gateway (AMG)
+            // adds a message sequence number to each message is sends on the PUB/SUB channel
             var newMsgSeqNum = token.Value<int>("MsgSeqNum");
             if (_lastMsgSeqNum == int.MaxValue || (_lastMsgSeqNum + 1 == newMsgSeqNum))
             {
+                // checks that the sequence number of the next message to be processed is one greater than the last message
                 _resetting = false;
                 _lastMsgSeqNum = token.Value<int>("MsgSeqNum");
             }
             else
             {
+                //If not then a Logon must re - issued re - synchronise the engine states
                 if (!_resetting && (_lastMsgSeqNum + 1 < newMsgSeqNum))
                 {
                     var response = _zeroMQ.Logon(_lastMsgSeqNum);
@@ -66,6 +70,8 @@ namespace QuantConnect.Atreyu
                     }
 
                     _resetting = true;
+
+                    // we should clear buffer as AMG re-play all messages starting from specific point
                     _messageBuffer.Clear();
                 }
                 return;
