@@ -45,8 +45,8 @@ namespace QuantConnect.Atreyu
         private readonly string _clientId;
         private readonly List<CashAmount> _cashBalance;
         private readonly List<Holding> _holdings;
-        private readonly string _brokerMPID;
-        private readonly string _locateRqd;
+        private readonly string _brokerMPID;    //required for short sale transactions
+        private readonly string _locateRqd;     //flag used in combination with BROKERID(5700) to indicate that Shared have located
 
         // Atreyu State Information
         private List<Client.Messages.Position> _positions;
