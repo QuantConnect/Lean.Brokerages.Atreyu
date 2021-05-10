@@ -114,10 +114,6 @@ namespace QuantConnect.Atreyu.Tests
         public override void CancelOrders(OrderTestParameters parameters)
         {
             const int secondsTimeout = 20;
-            Log.Trace("");
-            Log.Trace("CANCEL ORDERS");
-            Log.Trace("");
-
             var order = PlaceOrderWaitForStatus(parameters.CreateLongOrder(GetDefaultQuantity()), parameters.ExpectedStatus);
 
             var canceledOrderStatusEvent = new ManualResetEvent(false);
@@ -219,10 +215,6 @@ namespace QuantConnect.Atreyu.Tests
         [Test]
         public override void GetAccountHoldings()
         {
-            Log.Trace("");
-            Log.Trace("GET ACCOUNT HOLDINGS");
-            Log.Trace("");
-
             // ignore existing holdings as it doesn't contain information required for Lean (avg price is missed)
             Assert.IsEmpty(Brokerage.GetAccountHoldings());
 
