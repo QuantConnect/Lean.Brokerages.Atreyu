@@ -35,7 +35,7 @@ namespace QuantConnect.Atreyu.Certification
     /// <meta name="tag" content="using data" />
     /// <meta name="tag" content="using quantconnect" />
     /// <meta name="tag" content="trading and orders" />
-    public class FilledOrderTwoReplaceSequentiallySecondRejectedAlgorithm : BasicTemplateAlgorithm
+    public class FilledOrderTwoReplaceSequentiallySecondRejectedAlgorithm : BaseAtreyuCertificationTestAlgorithm
     {
         protected override string TestCode { get; } = "D17";
         protected override string[] Tickers

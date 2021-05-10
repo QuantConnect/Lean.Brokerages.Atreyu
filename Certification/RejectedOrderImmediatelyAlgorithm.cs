@@ -32,7 +32,7 @@ namespace QuantConnect.Atreyu.Certification
     /// <meta name="tag" content="using data" />
     /// <meta name="tag" content="using quantconnect" />
     /// <meta name="tag" content="trading and orders" />
-    public class RejectedOrderImmediatelyAlgorithm : BasicTemplateAlgorithm
+    public class RejectedOrderImmediatelyAlgorithm : BaseAtreyuCertificationTestAlgorithm
     {
         protected override string TestCode { get; } = "E4";
         protected override string[] Tickers
@@ -79,5 +79,7 @@ namespace QuantConnect.Atreyu.Certification
                 throw new Exception($"Order should be rejected immediately");
             }
         }
+
+        public override void OnOrderSubmitted(OrderEvent orderEvent){}
     }
 }

@@ -33,7 +33,7 @@ namespace QuantConnect.Atreyu.Certification
     /// <meta name="tag" content="using data" />
     /// <meta name="tag" content="using quantconnect" />
     /// <meta name="tag" content="trading and orders" />
-    public abstract class BasicTemplateAlgorithm : QCAlgorithm
+    public abstract class BaseAtreyuCertificationTestAlgorithm : QCAlgorithm
     {
         protected virtual string TestCode { get; } = "None";
         protected virtual string[] Tickers { get; } = new string[0];
@@ -137,7 +137,7 @@ namespace QuantConnect.Atreyu.Certification
             }
         }
 
-        public virtual void OnOrderSubmitted(OrderEvent orderEvent) { }
+        public abstract void OnOrderSubmitted(OrderEvent orderEvent);
 
         /// <summary>
         /// This is used by the regression test system to indicate if the open source Lean repository has the required data to run this algorithm.
