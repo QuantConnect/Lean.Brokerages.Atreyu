@@ -15,6 +15,7 @@
 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Moq;
@@ -26,6 +27,7 @@ using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
+using QuantConnect.Packets;
 using QuantConnect.Securities;
 using QuantConnect.Tests;
 using QuantConnect.Tests.Brokerages;
@@ -54,7 +56,7 @@ namespace QuantConnect.Atreyu.Tests
             algorithm.Setup(a => a.BrokerageModel).Returns(new AtreyuBrokerageModel());
             algorithm.Setup(a => a.Portfolio).Returns(new SecurityPortfolioManager(securities, transactions));
 
-            return new AtreyuBrokerage(orderProvider, securityProvider);
+            return new AtreyuBrokerage(orderProvider, securityProvider, new LiveNodePacket());
         }
 
         protected override decimal GetAskPrice(Symbol symbol)
@@ -226,6 +228,36 @@ namespace QuantConnect.Atreyu.Tests
         }
 
         [Test]
+        public void GetAccountHoldingsClearCache()
+        {
+            var brokerage = new AtreyuBrokerage(
+                new OrderProvider(),
+                new SecurityProvider(),
+                new LiveNodePacket()
+                {
+                    BrokerageData = new Dictionary<string, string>()
+                    {
+                        { "atreyu-cash-balance", "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]" },
+                        { "atreyu-holdings", "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10, \"Type\":1 }]" }
+                    }
+                });
+
+            Assert.IsNotEmpty(brokerage.GetAccountHoldings());
+            Assert.IsEmpty(brokerage.GetAccountHoldings());
+        }
+
+        [Test]
+        public void NoHoldings()
+        {
+            var brokerage = new AtreyuBrokerage(
+                new OrderProvider(),
+                new SecurityProvider(),
+                new LiveNodePacket());
+
+            Assert.IsEmpty(brokerage.GetAccountHoldings());
+        }
+
+        [Test]
         public void ParseUserInput()
         {
             var brokerage = new AtreyuBrokerage(
@@ -235,12 +267,18 @@ namespace QuantConnect.Atreyu.Tests
                 "QUANTCONNECT",
                 "udpWuzLTH7GDe9bN",
                 "QC-TEST1",
-                "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]",
-                "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10, \"Type\":1 }]",
                 "ABCD",
                 "N",
                 new OrderProvider(),
-                new SecurityProvider());
+                new SecurityProvider(),
+                new LiveNodePacket()
+                {
+                    BrokerageData = new Dictionary<string, string>()
+                    {
+                        { "atreyu-cash-balance", "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]" },
+                        { "atreyu-holdings", "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10, \"Type\":1 }]" }
+                    }
+                });
 
             Assert.AreEqual(2, brokerage.GetCashBalance().Count);
 
@@ -252,6 +290,43 @@ namespace QuantConnect.Atreyu.Tests
             Assert.AreEqual("GME", holding.Symbol.Value);
             Assert.AreEqual(10, holding.MarketPrice);
             Assert.AreEqual(SecurityType.Equity, holding.Type);
+        }
+
+        [Test]
+        public override void GetCashBalanceContainsSomething()
+        {
+            Log.Trace("");
+            Log.Trace("GET CASH BALANCE");
+            Log.Trace("");
+
+            var brokerage = new AtreyuBrokerage(
+                new OrderProvider(),
+                new SecurityProvider(),
+                new LiveNodePacket()
+                {
+                    BrokerageData = new Dictionary<string, string>()
+                    {
+                        { "atreyu-cash-balance", "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]" },
+                        { "atreyu-holdings", "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10, \"Type\":1 }]" }
+                    }
+                });
+
+            Assert.IsNotEmpty(brokerage.GetCashBalance());
+            Assert.IsEmpty(brokerage.GetCashBalance());
+        }
+
+        [Test]
+        public void NoCashBalance()
+        {
+            Log.Trace("");
+            Log.Trace("GET CASH BALANCE");
+            Log.Trace("");
+
+            var brokerage = new AtreyuBrokerage(
+                new OrderProvider(),
+                new SecurityProvider(),
+                new LiveNodePacket());
+            Assert.IsEmpty(brokerage.GetCashBalance());
         }
     }
 }
