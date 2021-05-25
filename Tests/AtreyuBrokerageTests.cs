@@ -282,8 +282,9 @@ namespace QuantConnect.Atreyu.Tests
 
             Assert.AreEqual(2, brokerage.GetCashBalance().Count);
 
-            Assert.AreEqual(1, brokerage.GetAccountHoldings().Count);
-            var holding = brokerage.GetAccountHoldings().FirstOrDefault();
+            var holdings = brokerage.GetAccountHoldings();
+            Assert.AreEqual(1, holdings.Count);
+            var holding = holdings.FirstOrDefault();
             Assert.NotNull(holding);
             Assert.AreEqual(5, holding.AveragePrice);
             Assert.AreEqual(33, holding.Quantity);

@@ -72,13 +72,13 @@ namespace QuantConnect.Atreyu
         /// <param name="algorithm">The algorithm instance</param>
         public AtreyuBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider, LiveNodePacket job)
             : this(Config.Get("atreyu-host"),
-                Config.GetInt("atreyu-req-port"),
-                Config.GetInt("atreyu-sub-port"),
+                Config.GetInt("atreyu-req-port", 0),
+                Config.GetInt("atreyu-sub-port", 0),
                 Config.Get("atreyu-username"),
                 Config.Get("atreyu-password"),
                 Config.Get("atreyu-client-id"),
-                Config.GetValue<string>("atreyu-broker-mpid"),
-                Config.GetValue<string>("atreyu-locate-rqd"),
+                job.BrokerageData.ContainsKey("atreyu-broker-mpid") ? job.BrokerageData["atreyu-broker-mpid"] : Config.Get("atreyu-broker-mpid"),
+                job.BrokerageData.ContainsKey("atreyu-locate-rqd") ? job.BrokerageData["atreyu-locate-rqd"] : Config.Get("atreyu-locate-rqd"),
                 orderProvider,
                 securityProvider,
                 job)
@@ -199,7 +199,10 @@ namespace QuantConnect.Atreyu
                 return JsonConvert.DeserializeObject<List<Holding>>(value);
             }
 
-            return new List<Holding>();
+            return (_securityProvider as SecurityPortfolioManager)?.Securities
+                .Where(kvp => kvp.Value.Holdings.AbsoluteQuantity > 0)
+                .OrderBy(kvp => kvp.Value.Symbol)
+                .Select(kvp => new Holding(kvp.Value)).ToList() ?? new List<Holding>();
         }
 
         public override List<CashAmount> GetCashBalance()
@@ -217,7 +220,9 @@ namespace QuantConnect.Atreyu
                 return JsonConvert.DeserializeObject<List<CashAmount>>(value);
             }
 
-            return new List<CashAmount>();
+            return (_securityProvider as SecurityPortfolioManager)?.CashBook
+                .Select(x => new CashAmount(x.Value.Amount, x.Value.Symbol))
+                .ToList() ?? new List<CashAmount>();
         }
 
         public override bool PlaceOrder(Order order)
