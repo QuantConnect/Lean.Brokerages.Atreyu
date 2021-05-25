@@ -32,5 +32,8 @@ namespace QuantConnect.Atreyu.Client.Messages
 
         [JsonProperty(PropertyName = "41", Required = Required.DisallowNull)]
         public string OrigClOrdID { get; set; }
+
+        [JsonProperty(PropertyName = "109", Required = Required.DisallowNull)]
+        public string ClientId { get; set; }
     }
 }

@@ -30,16 +30,27 @@ using QuantConnect.Securities;
 using QuantConnect.Util;
 using HistoryRequest = QuantConnect.Data.HistoryRequest;
 using Order = QuantConnect.Orders.Order;
+using Newtonsoft.Json;
+using QuantConnect.Packets;
 
 namespace QuantConnect.Atreyu
 {
     public partial class AtreyuBrokerage : Brokerage
     {
-        private readonly IAlgorithm _algorithm;
         private readonly IOrderProvider _orderProvider;
         private readonly ZeroMQConnectionManager _zeroMQ;
         private readonly ISymbolMapper _symbolMapper;
         private readonly ISecurityProvider _securityProvider;
+        private readonly LiveNodePacket _job;
+
+        // Atreyu inputs
+        private readonly string _clientId;
+        private readonly string _brokerMPID;    //required for short sale transactions
+        private readonly string _locateRqd;     //flag used in combination with BROKERID(5700) to indicate that Shared have located
+
+        // Atreyu State Information
+        private List<Client.Messages.Position> _positions;
+        private List<Client.Messages.Order> _orders;
 
         /// <summary>
         /// Checks if the ZeroMQ is connected
@@ -50,13 +61,27 @@ namespace QuantConnect.Atreyu
         /// Creates a new <see cref="AtreyuBrokerage"/> from the specified values retrieving data from configuration file
         /// </summary>
         /// <param name="algorithm">The algorithm instance</param>
-        public AtreyuBrokerage(IAlgorithm algorithm)
+        /// <param name="job">The job packet</param>
+        public AtreyuBrokerage(IAlgorithm algorithm, LiveNodePacket job)
+            : this(algorithm.Transactions, algorithm.Portfolio, job)
+        { }
+
+        /// <summary>
+        /// Creates a new <see cref="AtreyuBrokerage"/> from the specified values retrieving data from configuration file
+        /// </summary>
+        /// <param name="algorithm">The algorithm instance</param>
+        public AtreyuBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider, LiveNodePacket job)
             : this(Config.Get("atreyu-host"),
-                Config.GetInt("atreyu-req-port"),
-                Config.GetInt("atreyu-sub-port"),
+                Config.GetInt("atreyu-req-port", 0),
+                Config.GetInt("atreyu-sub-port", 0),
                 Config.Get("atreyu-username"),
                 Config.Get("atreyu-password"),
-                algorithm)
+                Config.Get("atreyu-client-id"),
+                job.BrokerageData.ContainsKey("atreyu-broker-mpid") ? job.BrokerageData["atreyu-broker-mpid"] : Config.Get("atreyu-broker-mpid"),
+                job.BrokerageData.ContainsKey("atreyu-locate-rqd") ? job.BrokerageData["atreyu-locate-rqd"] : Config.Get("atreyu-locate-rqd"),
+                orderProvider,
+                securityProvider,
+                job)
         { }
 
         /// <summary>
@@ -67,24 +92,74 @@ namespace QuantConnect.Atreyu
         /// <param name="subscribePort">Port for publish/subscribe (PUBSUB) messaging pattern</param>
         /// <param name="username">The login user name</param>
         /// <param name="password">The login password</param>
+        /// <param name="clientId">Assigned by Atreyu</param>
+        /// <param name="brokerMPID">Broker MPID Required for short sale transactions</param>
+        /// <param name="locate">tells the broker that the client has located shares for the short sale</param>
         /// <param name="algorithm">The algorithm instance</param>
+        /// <param name="job">The job packet</param>
         public AtreyuBrokerage(
             string host,
             int requestPort,
             int subscribePort,
             string username,
             string password,
-            IAlgorithm algorithm) : base("Atreyu")
+            string clientId,
+            string brokerMPID,
+            string locate,
+            IAlgorithm algorithm,
+            LiveNodePacket job) : this(host, requestPort, subscribePort, username, password, clientId, brokerMPID, locate, algorithm?.Transactions, algorithm?.Portfolio, job)
         {
-            if (algorithm == null)
+        }
+
+        /// <summary>
+        ///  Creates a new <see cref="AtreyuBrokerage"/> from the specified values
+        /// </summary>
+        /// <param name="host">Instance url</param>
+        /// <param name="requestPort">Port for request/reply (REQREP) messaging pattern</param>
+        /// <param name="subscribePort">Port for publish/subscribe (PUBSUB) messaging pattern</param>
+        /// <param name="username">The login user name</param>
+        /// <param name="password">The login password</param>
+        /// <param name="clientId">Assigned by Atreyu</param>
+        /// <param name="brokerMPID">Broker MPID Required for short sale transactions</param>
+        /// <param name="locate">tells the broker that the client has located shares for the short sale</param>
+        /// <param name="orderProvider">The algorithm order provider</param>
+        /// <param name="securityProvider">The algorithm security provider</param>
+        /// <param name="job">The job packet</param>
+        public AtreyuBrokerage(
+            string host,
+            int requestPort,
+            int subscribePort,
+            string username,
+            string password,
+            string clientId,
+            string brokerMPID,
+            string locate,
+            IOrderProvider orderProvider,
+            ISecurityProvider securityProvider,
+            LiveNodePacket job) : base("Atreyu")
+        {
+            if (orderProvider == null)
             {
-                throw new ArgumentNullException(nameof(algorithm));
+                throw new ArgumentNullException(nameof(orderProvider));
             }
 
-            _algorithm = algorithm;
-            _orderProvider = _algorithm.Transactions;
-            _securityProvider = _algorithm.Portfolio;
+            if (securityProvider == null)
+            {
+                throw new ArgumentNullException(nameof(securityProvider));
+            }
+
+            if (string.IsNullOrEmpty(clientId))
+            {
+                throw new ArgumentNullException(nameof(clientId));
+            }
+
+            _clientId = clientId;
+            _brokerMPID = brokerMPID;
+            _locateRqd = locate;
+            _orderProvider = orderProvider;
+            _securityProvider = securityProvider;
             _symbolMapper = new AtreyuSymbolMapper();
+            _job = job;
 
             _zeroMQ = new ZeroMQConnectionManager(host, requestPort, subscribePort, username, password);
             _zeroMQ.MessageRecieved += (s, e) => OnMessage(e);
@@ -96,24 +171,13 @@ namespace QuantConnect.Atreyu
             {
                 Log.Debug("AtreyuBrokerage.GetOpenOrders()");
             }
-            var response = _zeroMQ.Send<OpenOrdersResultMessage>(new QueryOpenOrdersMessage());
 
-            if (response == null)
-            {
-                throw new Exception("AtreyuBrokerage.GetOpenOrders: message was not sent.");
-            }
-
-            if (response.Status != 0)
-            {
-                throw new Exception($"AtreyuBrokerage.GetOpenOrders: request failed: [{(int)response.Status}] ErrorMessage: {response.Text}");
-            }
-
-            if (response.Orders?.Any() != true)
+            if (_orders?.Any() != true)
             {
                 return new List<Order>();
             }
 
-            var result = response.Orders
+            var result = _orders
                 .Select(ConvertOrder)
                 .ToList();
 
@@ -126,26 +190,19 @@ namespace QuantConnect.Atreyu
             {
                 Log.Debug("AtreyuBrokerage.GetAccountHoldings()");
             }
-            var response = _zeroMQ.Send<OpenPositionsResultMessage>(new QueryPositionsMessage());
 
-            if (response == null)
+            if (_job.BrokerageData.TryGetValue("atreyu-holdings", out string value) && !string.IsNullOrEmpty(value))
             {
-                throw new Exception("AtreyuBrokerage.GetAccountHoldings: message was not sent.");
+                // remove the key, we really only want to return the cached value on the first request
+                _job.BrokerageData.Remove("atreyu-holdings");
+
+                return JsonConvert.DeserializeObject<List<Holding>>(value);
             }
 
-            if (response.Status != 0)
-            {
-                throw new Exception($"AtreyuBrokerage.GetAccountHoldings: request failed: [{(int)response.Status}] ErrorMessage: {response.Text}");
-            }
-
-            if (response.Positions?.Any() != true)
-            {
-                return new List<Holding>();
-            }
-
-            return response.Positions
-                .Select(ConvertHolding)
-                .ToList();
+            return (_securityProvider as SecurityPortfolioManager)?.Securities
+                .Where(kvp => kvp.Value.Holdings.AbsoluteQuantity > 0)
+                .OrderBy(kvp => kvp.Value.Symbol)
+                .Select(kvp => new Holding(kvp.Value)).ToList() ?? new List<Holding>();
         }
 
         public override List<CashAmount> GetCashBalance()
@@ -154,8 +211,18 @@ namespace QuantConnect.Atreyu
             {
                 Log.Debug("AtreyuBrokerage.GetCashBalance()");
             }
-            return new List<CashAmount>() { new CashAmount(1000, "USD") };
-            //throw new NotImplementedException();
+
+            if (_job.BrokerageData.TryGetValue("atreyu-cash-balance", out string value) && !string.IsNullOrEmpty(value))
+            {
+                // remove the key, we really only want to return the cached value on the first request
+                _job.BrokerageData.Remove("atreyu-cash-balance");
+
+                return JsonConvert.DeserializeObject<List<CashAmount>>(value);
+            }
+
+            return (_securityProvider as SecurityPortfolioManager)?.CashBook
+                .Select(x => new CashAmount(x.Value.Amount, x.Value.Symbol))
+                .ToList() ?? new List<CashAmount>();
         }
 
         public override bool PlaceOrder(Order order)
@@ -168,17 +235,32 @@ namespace QuantConnect.Atreyu
 
             var request = new NewEquityOrderMessage()
             {
-                Side = ConvertDirection(order.Direction),
+                Side = ConvertDirection(order),
                 Symbol = _symbolMapper.GetBrokerageSymbol(order.Symbol),
-                ClOrdID = Guid.NewGuid().ToString().Replace("-", string.Empty),
+                ClientId = _clientId,
+                ClOrdID = GetNewOrdID(),
                 OrderQty = (int)order.AbsoluteQuantity,
+                //DeliverToCompID = "QC-CS-INET",
                 TimeInForce = ConvertTimeInForce(order.TimeInForce),
-                DeliverToCompID = "CS", // exclude for testing purposes
-                ExDestination = "NSDQ",
-                ExecInst = "1",
-                HandlInst = "1",
-                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
+                TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture),
+                Account = "DEFAULT"
             };
+
+            if (request.Side.Equals("5") || request.Side.Equals("SELL_SHORT", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrEmpty(_brokerMPID))
+                {
+                    throw new ArgumentNullException(nameof(_brokerMPID), "AtreyuBrokerage.PlaceOrder: Broker MPID(5700) required for short sale transactions.");
+                }
+                if (string.IsNullOrEmpty(_locateRqd))
+                {
+                    throw new ArgumentNullException(nameof(_locateRqd), "AtreyuBrokerage.PlaceOrder: LOCATERQD(114) required for short sale transactions.");
+                }
+
+                //Broker MPID Required for short sale transactions.
+                request.LocateBrokerID = _brokerMPID;
+                request.LocateRqd = _locateRqd;
+            }
 
             switch (order.Type)
             {
@@ -261,7 +343,8 @@ namespace QuantConnect.Atreyu
 
             var request = new CancelReplaceEquityOrderMessage()
             {
-                ClOrdID = order.BrokerId.First(),
+                ClientId = _clientId,
+                ClOrdID = GetNewOrdID(),
                 OrderQty = (int)order.AbsoluteQuantity,
                 OrigClOrdID = order.BrokerId.First(),
                 TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
@@ -323,7 +406,8 @@ namespace QuantConnect.Atreyu
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(new CancelEquityOrderMessage()
                 {
-                    ClOrdID = order.BrokerId.First(),
+                    ClientId = _clientId,
+                    ClOrdID = GetNewOrdID(),
                     OrigClOrdID = order.BrokerId.First(),
                     TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture)
                 });
@@ -367,7 +451,15 @@ namespace QuantConnect.Atreyu
         public override void Connect()
         {
             if (!_zeroMQ.IsConnected)
+            {
                 _zeroMQ.Connect();
+                var response = _zeroMQ.Logon(_lastMsgSeqNum);
+                if (response.Status == 0)
+                {
+                    _positions = response.Positions.ToList();
+                    _orders = response.Orders.ToList();
+                }
+            }
         }
 
         public override void Disconnect()

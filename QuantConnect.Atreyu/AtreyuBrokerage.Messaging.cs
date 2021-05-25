@@ -22,6 +22,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using QuantConnect.Atreyu.Client.Messages;
+using Order = QuantConnect.Orders.Order;
 
 namespace QuantConnect.Atreyu
 {
@@ -31,6 +32,9 @@ namespace QuantConnect.Atreyu
         private readonly ConcurrentQueue<ExecutionReport> _messageBuffer = new ConcurrentQueue<ExecutionReport>();
         private readonly string[] _notMappedStatuses = { "PENDING_REPLACE", "DONE_FOR_DAY" };
 
+        // MaxValue allows to prevent previous messages
+        private int _lastMsgSeqNum = int.MaxValue;
+        private bool _resetting = false;
         public void OnMessage(string message)
         {
             var token = JObject.Parse(message);
@@ -43,6 +47,34 @@ namespace QuantConnect.Atreyu
             if (Log.DebuggingEnabled)
             {
                 Log.Debug(message);
+            }
+
+            // Atreyu Message Gateway (AMG)
+            // adds a message sequence number to each message is sends on the PUB/SUB channel
+            var newMsgSeqNum = token.Value<int>("MsgSeqNum");
+            if (_lastMsgSeqNum == int.MaxValue || (_lastMsgSeqNum + 1 == newMsgSeqNum))
+            {
+                // checks that the sequence number of the next message to be processed is one greater than the last message
+                _resetting = false;
+                _lastMsgSeqNum = token.Value<int>("MsgSeqNum");
+            }
+            else
+            {
+                //If not then a Logon must re - issued re - synchronise the engine states
+                if (!_resetting && (_lastMsgSeqNum + 1 < newMsgSeqNum))
+                {
+                    var response = _zeroMQ.Logon(_lastMsgSeqNum);
+                    if (response.Status != 0)
+                    {
+                        throw new Exception("Could not re-login to Atreyu.");
+                    }
+
+                    _resetting = true;
+
+                    // we should clear buffer as AMG re-play all messages starting from specific point
+                    _messageBuffer.Clear();
+                }
+                return;
             }
 
             // we can ignore not-execution messages
@@ -96,25 +128,55 @@ namespace QuantConnect.Atreyu
                 return;
             }
 
-            var order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
+            var atreyuOrderId = report.OrigClOrdID ?? report.ClOrdID;
+            var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
             if (order != null)
             {
                 OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, $"Atreyu Order Event. Message: {report.Text}")
                 {
                     Status = ConvertExecType(report.ExecType)
                 });
+
+                if (ConvertExecType(report.ExecType) == OrderStatus.Submitted)
+                {
+                    _orders.Add(
+                        new Client.Messages.Order()
+                        {
+                            Symbol = order.Symbol.Value,
+                            TransactTime = report.TransactTime,
+                            OrdType = order.Type == OrderType.MarketOnClose
+                                ? "MARKETONCLOSE"
+                                : order.Type == OrderType.Limit
+                                    ? "LIMIT"
+                                    : "MARKET",
+                            Side = ConvertDirection(order),
+                            OrderQty = (int)order.AbsoluteQuantity,
+                            Price = order.Price,
+                            ClOrdID = order.BrokerId.First(),
+                            TimeInForce = ConvertTimeInForce(order.TimeInForce),
+                            OrdStatus = "NEW"
+
+                        });
+                }
+                else if (ConvertExecType(report.ExecType) == OrderStatus.Canceled)
+                {
+                    _orders = _orders
+                        .Where(o => !order.BrokerId.Contains(o.ClOrdID))
+                        .ToList();
+                }
             }
         }
 
         private void OnOrderFill(ExecutionReport report)
         {
-            var order = _orderProvider.GetOrderByBrokerageId(report.OrigClOrdID ?? report.ClOrdID);
             var fillingReport = report as FillOrderReport;
             if (fillingReport == null)
             {
                 throw new ArgumentException($"Received unexpected filling report format. Content: {JsonConvert.SerializeObject(report)}");
             }
 
+            var atreyuOrderId = report.OrigClOrdID ?? report.ClOrdID;
+            var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
             try
             {
                 if (order == null)

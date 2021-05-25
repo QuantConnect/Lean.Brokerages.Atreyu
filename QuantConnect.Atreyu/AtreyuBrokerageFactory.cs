@@ -58,7 +58,12 @@ namespace QuantConnect.Atreyu
             { "atreyu-req-port", Config.Get("atreyu-req-port")},
             { "atreyu-sub-port", Config.Get("atreyu-sub-port")},
             { "atreyu-username", Config.Get("atreyu-username")},
-            { "atreyu-password", Config.Get("atreyu-password")}
+            { "atreyu-password", Config.Get("atreyu-password")},
+            { "atreyu-client-id", Config.Get("atreyu-client-id")},
+            { "atreyu-cash-balance", Config.Get("atreyu-cash-balance")},
+            { "atreyu-holdings", Config.Get("atreyu-holdings")},
+            { "atreyu-broker-mpid", Config.Get("atreyu-broker-mpid")},
+            { "atreyu-locate-rqd", Config.Get("atreyu-locate-rqd")}
         };
 
         /// <summary>
@@ -81,6 +86,19 @@ namespace QuantConnect.Atreyu
             var subscribePort = Read<int>(job.BrokerageData, "atreyu-sub-port", errors);
             var username = Read<string>(job.BrokerageData, "atreyu-username", errors);
             var password = Read<string>(job.BrokerageData, "atreyu-password", errors);
+            var clientId = Read<string>(job.BrokerageData, "atreyu-client-id", errors);
+
+            var brokerMPID = string.Empty;
+            if (job.BrokerageData.ContainsKey("atreyu-broker-mpid"))
+            {
+                brokerMPID = Convert.ToString(job.BrokerageData["atreyu-broker-mpid"]);
+            }
+
+            var locate = string.Empty;
+            if (job.BrokerageData.ContainsKey("atreyu-locate-rqd"))
+            {
+                locate = Convert.ToString(job.BrokerageData["atreyu-locate-rqd"]);
+            }
 
             if (errors.Count != 0)
             {
@@ -89,12 +107,16 @@ namespace QuantConnect.Atreyu
             }
 
             var brokerage = new AtreyuBrokerage(
-                host, 
-                requestPort, 
-                subscribePort, 
-                username, 
+                host,
+                requestPort,
+                subscribePort,
+                username,
                 password,
-                algorithm);
+                clientId,
+                brokerMPID,
+                locate,
+                algorithm,
+                job);
 
             return brokerage;
         }

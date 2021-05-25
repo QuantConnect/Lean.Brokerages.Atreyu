@@ -32,11 +32,8 @@ namespace QuantConnect.Atreyu.Client
     public class ZeroMQConnectionManager : IDisposable
     {
         private readonly SubscriberSocket _subscribeSocket;
-        private readonly CancellationTokenSource _cancellationTokenSource;
         private static TimeSpan _timeoutRequestResponse = TimeSpan.FromSeconds(10);
         private static TimeSpan _timeoutPublishSubscribe = TimeSpan.FromSeconds(30);
-
-        private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
 
         private readonly string _host;
         private readonly int _requestPort;
@@ -44,12 +41,13 @@ namespace QuantConnect.Atreyu.Client
         private readonly string _username;
         private readonly string _password;
 
+        private CancellationTokenSource _cancellationTokenSource;
         private volatile bool _connected;
         private string _sessionId;
 
         public event EventHandler<string> MessageRecieved;
 
-        public bool IsConnected => _connected;
+        public bool IsConnected => _connected && !string.IsNullOrEmpty(_sessionId);
 
         /// <summary>
         /// Creates ZeroMQ client
@@ -62,7 +60,6 @@ namespace QuantConnect.Atreyu.Client
         public ZeroMQConnectionManager(string host, int requestPort, int subscribePort, string username, string password)
         {
             _subscribeSocket = new SubscriberSocket();
-            _cancellationTokenSource = new CancellationTokenSource();
 
             _host = host;
             _requestPort = requestPort;
@@ -77,17 +74,17 @@ namespace QuantConnect.Atreyu.Client
         public void Connect()
         {
             // subscriber
+            Log.Debug("Subscriber socket connecting...");
+
+            _subscribeSocket.Connect(_host + $":{_subscribePort}");
+            _subscribeSocket.SubscribeToAnyTopic();
+
+            Log.Debug("Subscriber socket connected");
+
+            _cancellationTokenSource = new CancellationTokenSource();
             var token = _cancellationTokenSource.Token;
             Task.Factory.StartNew(() =>
             {
-                _subscribeSocket.Connect(_host + $":{_subscribePort}");
-                _subscribeSocket.SubscribeToAnyTopic();
-                _resetEvent.Set();
-
-                if (Log.DebuggingEnabled)
-                {
-                    Log.Debug("Subscriber socket connecting...");
-                }
                 while (true)
                 {
                     try
@@ -111,30 +108,11 @@ namespace QuantConnect.Atreyu.Client
                         Log.Error($"ZeroMQConnectionManager.PUBSUB(): error occurs. Message: {e.Message}");
                     }
                 }
-                if (Log.DebuggingEnabled)
-                {
-                    Log.Debug("ZeroMQConnectionManager: stopped polling messages");
-                }
+
+                Log.Trace("ZeroMQConnectionManager: stopped polling messages");
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
-            if (_resetEvent.WaitOne(_timeoutPublishSubscribe))
-            {
-                _connected = true;
-
-                var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password));
-                if (response.Status != 0)
-                {
-                    throw new Exception(
-                        $"AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate. Error {response.Text}");
-                }
-
-                _sessionId = response.SessionId;
-            }
-            else
-            {
-                throw new Exception(
-                    $"AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not connect to PUBSUB communication channel. Port: {_subscribePort}");
-            }
+            _connected = true;
         }
 
         /// <summary>
@@ -148,18 +126,30 @@ namespace QuantConnect.Atreyu.Client
         }
 
         /// <summary>
+        /// FLIRT Logon,  initiates trading.
+        /// The state information returned will include all current open orders as well as position information by account, symbol for thecurrent trading day
+        /// </summary>
+        /// <returns>state information on your trading for the current trading day</returns>
+        public LogonResponseMessage Logon(int start)
+        {
+            var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password) { MsgSeqNum = start });
+            if (response.Status != 0)
+            {
+                throw new Exception(
+                    $"AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate. Error {response.Text}");
+            }
+
+            _sessionId = response.SessionId;
+            return response;
+        }
+
+        /// <summary>
         /// Send a request message from a RequestSocket; is blocking
         /// </summary>
         /// <param name="message">request message</param>
         /// <returns>message from the ResponseSocket</returns>
         public string Send(RequestMessage message)
         {
-            if (!IsConnected)
-            {
-                Log.Error($"ZeroMQConnectionManager.Send(): connection has been disposed.");
-                return null;
-            }
-
             try
             {
                 // request, Unit Of Work pattern
@@ -168,9 +158,16 @@ namespace QuantConnect.Atreyu.Client
                 {
                     requestSocket.Connect(_host + $":{_requestPort}");
 
-                    if (message is SignedMessage)
+                    if (message is SignedMessage signedMessage)
                     {
-                        (message as SignedMessage).SessionId = _sessionId;
+                        if (string.IsNullOrEmpty(_sessionId))
+                        {
+                            Log.Error($"ZeroMQConnectionManager.Send(): Atreyu session cannot be null or empty for this request.");
+                            return null;
+                        }
+
+
+                        signedMessage.SessionId = _sessionId;
                     }
 
                     if (!requestSocket.TrySendFrame(
@@ -230,7 +227,6 @@ namespace QuantConnect.Atreyu.Client
         public void Dispose()
         {
             _cancellationTokenSource?.Cancel();
-            _resetEvent.DisposeSafely();
             // forcibly close the connection
             _subscribeSocket?.DisposeSafely();
         }

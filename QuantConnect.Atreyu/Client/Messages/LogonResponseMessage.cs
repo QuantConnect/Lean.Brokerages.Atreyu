@@ -13,10 +13,19 @@
  * limitations under the License.
 */
 
+using System.Collections.Generic;
+using Newtonsoft.Json;
+
 namespace QuantConnect.Atreyu.Client.Messages
 {
     public class LogonResponseMessage : ResponseMessage
     {
         public string SessionId { get; set; }
+
+        [JsonProperty(PropertyName = "positions", Required = Required.DisallowNull)]
+        public Position[] Positions { get; set; }
+
+        [JsonProperty(PropertyName = "orders", Required = Required.DisallowNull)]
+        public Order[] Orders { get; set; }
     }
 }
