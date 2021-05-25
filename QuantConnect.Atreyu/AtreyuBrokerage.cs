@@ -35,6 +35,7 @@ using QuantConnect.Packets;
 
 namespace QuantConnect.Atreyu
 {
+    [BrokerageFactory(typeof(AtreyuBrokerageFactory))]
     public partial class AtreyuBrokerage : Brokerage
     {
         private readonly IOrderProvider _orderProvider;
