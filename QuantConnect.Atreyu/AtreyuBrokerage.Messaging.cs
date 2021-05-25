@@ -30,7 +30,7 @@ namespace QuantConnect.Atreyu
     {
         private volatile bool _streamLocked;
         private readonly ConcurrentQueue<ExecutionReport> _messageBuffer = new ConcurrentQueue<ExecutionReport>();
-        private readonly string[] _notMappedStatuses = { "PENDING_REPLACE", "DONE_FOR_DAY" };
+        private readonly string[] _notMappedStatuses = { "PENDING_REPLACE" };
 
         // MaxValue allows to prevent previous messages
         private int _lastMsgSeqNum = int.MaxValue;
@@ -79,7 +79,8 @@ namespace QuantConnect.Atreyu
 
             // we can ignore not-execution messages
             // TODO: subscribe to channels that we really need and miss others
-            if (!token.TryGetValue("ExecType", StringComparison.OrdinalIgnoreCase, out _))
+            if (!token.TryGetValue("ExecType", StringComparison.OrdinalIgnoreCase, out _) &&
+                !token.TryGetValue("CxlRejReason", StringComparison.OrdinalIgnoreCase, out _))
             {
                 return;
             }
@@ -109,6 +110,9 @@ namespace QuantConnect.Atreyu
                 case FillOrderReport fill:
                     OnOrderFill(fill);
                     break;
+                case OrderCancelRejectReport reject:
+                    OnCancelRejected(reject);
+                    break;
                 case ExecutionReport execution:
                     OnExecution(execution);
                     break;
@@ -134,7 +138,7 @@ namespace QuantConnect.Atreyu
             {
                 OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, $"Atreyu Order Event. Message: {report.Text}")
                 {
-                    Status = ConvertExecType(report.ExecType)
+                    Status = ConvertOrderStatus(report.OrdStatus)
                 });
 
                 if (ConvertExecType(report.ExecType) == OrderStatus.Submitted)
@@ -167,10 +171,9 @@ namespace QuantConnect.Atreyu
             }
         }
 
-        private void OnOrderFill(ExecutionReport report)
+        private void OnOrderFill(FillOrderReport report)
         {
-            var fillingReport = report as FillOrderReport;
-            if (fillingReport == null)
+            if (report == null)
             {
                 throw new ArgumentException($"Received unexpected filling report format. Content: {JsonConvert.SerializeObject(report)}");
             }
@@ -186,11 +189,11 @@ namespace QuantConnect.Atreyu
                 }
 
                 var security = _securityProvider.GetSecurity(order.Symbol);
-                var fillPrice = fillingReport.LastPx;
-                var fillQuantity = order.Direction == OrderDirection.Sell ? -fillingReport.LastShares : fillingReport.LastShares;
-                var updTime = Time.ParseFIXUtcTimestamp(fillingReport.TransactTime);
+                var fillPrice = report.LastPx;
+                var fillQuantity = order.Direction == OrderDirection.Sell ? -report.LastShares : report.LastShares;
+                var updTime = Time.ParseFIXUtcTimestamp(report.TransactTime);
                 var orderFee = security.FeeModel.GetOrderFee(new OrderFeeParameters(security, order));
-                var status = ConvertOrderStatus(fillingReport.OrdStatus);
+                var status = ConvertOrderStatus(report.OrdStatus);
                 var orderEvent = new OrderEvent
                 (
                     order.Id, order.Symbol, updTime, status,
@@ -204,6 +207,25 @@ namespace QuantConnect.Atreyu
             {
                 Log.Error(e);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// If rejected by trader/exchange
+        /// </summary>
+        /// <param name="report"></param>
+        private void OnCancelRejected(OrderCancelRejectReport report)
+        {
+            var atreyuOrderId = report.OrigClOrdID ?? report.ClOrdID;
+            var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
+            if (order != null)
+            {
+                order.BrokerId.Remove(report.ClOrdID);
+                OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero,
+                    $"Atreyu Order Event. Message: {report.Text}, reason: {report.CxlRejReason}.")
+                {
+                    Status = ConvertOrderStatus(report.OrdStatus)
+                });
             }
         }
 

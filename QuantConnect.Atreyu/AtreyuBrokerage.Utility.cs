@@ -145,6 +145,7 @@ namespace QuantConnect.Atreyu
                     return OrderStatus.UpdateSubmitted;
 
                 case "3":
+                case "DONE_FOR_DAY":
                 case "7":
                 case "8":
                 case "REJECTED":
@@ -177,6 +178,7 @@ namespace QuantConnect.Atreyu
                 case "CANCELED":
                     return OrderStatus.Canceled;
                 case "REJECTED":
+                case "DONE_FOR_DAY":
                     return OrderStatus.Invalid;
 
                 default:

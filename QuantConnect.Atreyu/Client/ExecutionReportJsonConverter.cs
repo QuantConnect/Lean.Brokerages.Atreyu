@@ -37,23 +37,28 @@ namespace QuantConnect.Atreyu.Client
             )
         {
             JObject token = JObject.Load(reader);
-            var execType = token.GetValue("ExecType", StringComparison.OrdinalIgnoreCase)?.Value<string>();
-            if (string.IsNullOrEmpty(execType))
+            ExecutionReport report;
+
+            if (token.TryGetValue("ExecType", StringComparison.OrdinalIgnoreCase, out var execType))
+            {
+                switch (execType.Value<string>())
+                {
+                    case "PARTIAL_FILL":
+                    case "FILL":
+                        report = new FillOrderReport();
+                        break;
+                    default:
+                        report = new ExecutionReport();
+                        break;
+                }
+            }
+            else if (token.TryGetValue("CxlRejReason", StringComparison.OrdinalIgnoreCase, out var cxlRej))
+            {
+                report = new OrderCancelRejectReport();
+            }
+            else
             {
                 throw new ArgumentException("Execution report type is not specified.");
-            }
-
-            ExecutionReport report;
-            switch (execType)
-            {
-                case "PARTIAL_FILL":
-                case "FILL":
-                    report = new FillOrderReport();
-                    break;
-                default:
-                    report = new ExecutionReport();
-                    break;
-
             }
 
             serializer?.Populate(token.CreateReader(), report);
