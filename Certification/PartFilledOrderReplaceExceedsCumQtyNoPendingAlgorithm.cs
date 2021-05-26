@@ -83,7 +83,8 @@ namespace QuantConnect.Atreyu.Certification
                 new ExecutionEvent {Status = OrderStatus.PartiallyFilled, FillQuantity = 20},
                 new ExecutionEvent {Status = OrderStatus.PartiallyFilled, FillQuantity = 20},
                 new ExecutionEvent {Status = OrderStatus.PartiallyFilled},
-                new ExecutionEvent {Status = OrderStatus.Filled, FillQuantity = 60}
+                new ExecutionEvent {Status = OrderStatus.PartiallyFilled, FillQuantity = 20},
+                new ExecutionEvent {Status = OrderStatus.Filled, FillQuantity = 40}
             });
         }
     }

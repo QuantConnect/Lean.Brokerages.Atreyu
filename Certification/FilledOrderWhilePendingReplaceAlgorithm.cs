@@ -41,7 +41,7 @@ namespace QuantConnect.Atreyu.Certification
         {
             get
             {
-                return new[] { "AAPL" };
+                return new[] { "C" };
             }
         }
 
@@ -80,7 +80,7 @@ namespace QuantConnect.Atreyu.Certification
         {
             Executions[orderEvent.Symbol.Value].Executions = new Queue<ExecutionEvent>(new[]
             {
-                new ExecutionEvent {Status = OrderStatus.Filled, FillQuantity = 100},
+                new ExecutionEvent {Status = OrderStatus.UpdateSubmitted, FillQuantity = 100},
                 new ExecutionEvent {Status = OrderStatus.Filled}
             });
         }

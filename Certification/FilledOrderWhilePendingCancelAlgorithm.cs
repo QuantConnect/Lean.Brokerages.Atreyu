@@ -79,7 +79,7 @@ namespace QuantConnect.Atreyu.Certification
             {
                 new ExecutionEvent {Status = OrderStatus.CancelPending },
                 new ExecutionEvent {Status = OrderStatus.CancelPending },
-                new ExecutionEvent {Status = OrderStatus.Filled, FillQuantity = 100},
+                new ExecutionEvent {Status = OrderStatus.CancelPending, FillQuantity = 100},
                 new ExecutionEvent {Status = OrderStatus.Filled}
             });
         }

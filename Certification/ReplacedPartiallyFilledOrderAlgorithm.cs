@@ -40,7 +40,7 @@ namespace QuantConnect.Atreyu.Certification
         {
             get
             {
-                return new[] { "IBM" };
+                return new[] { "FB" };
             }
         }
         private bool _replacePending = false;
