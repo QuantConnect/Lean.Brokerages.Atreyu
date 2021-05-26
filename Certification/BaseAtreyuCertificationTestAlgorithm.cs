@@ -86,22 +86,32 @@ namespace QuantConnect.Atreyu.Certification
 
         public override void OnOrderEvent(OrderEvent orderEvent)
         {
-            if (orderEvent.Status == OrderStatus.Submitted && Executions.TryGetValue(orderEvent.Symbol.Value, out var ticker) && ticker.Executions == null)
+            try
             {
-                OnOrderSubmitted(orderEvent);
-                return;
+                if (orderEvent.Status == OrderStatus.Submitted &&
+                    Executions.TryGetValue(orderEvent.Symbol.Value, out var ticker) && ticker.Executions == null)
+                {
+                    OnOrderSubmitted(orderEvent);
+                    return;
+                }
+
+                if (!Executions.TryGetValue(orderEvent.Symbol.Value, out var target) ||
+                    target.Executions?.Any() != true)
+                {
+                    throw new Exception($"Unexpected order event: {orderEvent}");
+                }
+
+                target.Assert(orderEvent);
+
+                if (Executions.All(s => s.Value?.Executions?.Count == 0))
+                {
+                    Quit($"Certification Test {TestCode} Passed successfully");
+                }
             }
-
-            if (!Executions.TryGetValue(orderEvent.Symbol.Value, out var target) || target.Executions?.Any() != true)
+            catch (Exception e)
             {
-                throw new Exception($"Unexpected order event: {orderEvent}");
-            }
-
-            target.Assert(orderEvent);
-
-            if (Executions.All(s => s.Value?.Executions.Count == 0))
-            {
-                Quit($"Certification Test {TestCode} Passed successfully");
+                Error(e);
+                Quit($"Certification Test {TestCode} failed");
             }
         }
 
