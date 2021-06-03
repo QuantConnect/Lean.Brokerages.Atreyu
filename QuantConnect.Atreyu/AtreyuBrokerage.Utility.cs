@@ -105,8 +105,7 @@ namespace QuantConnect.Atreyu
                     //AveragePrice = position.BasePrice,
                     //MarketPrice = position.BasePrice,
                     Quantity = position.LongQty > 0 ? position.LongQty : position.ShortQty,
-                    CurrencySymbol = "$",
-                    Type = SecurityType.Equity
+                    CurrencySymbol = "$"
                 };
             }
             catch (Exception)
