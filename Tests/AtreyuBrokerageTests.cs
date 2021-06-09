@@ -21,10 +21,7 @@ using System.Threading;
 using Moq;
 using NUnit.Framework;
 using QuantConnect.Brokerages;
-using QuantConnect.Brokerages.Binance;
-using QuantConnect.Configuration;
 using QuantConnect.Interfaces;
-using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
@@ -38,7 +35,7 @@ namespace QuantConnect.Atreyu.Tests
     /// <summary>
     /// Atreyu-CertificationSimulatorTests-v2.2.2
     /// </summary>
-    public class AtreyuBrokerageTests : QuantConnect.Tests.Brokerages.BrokerageTests
+    public class AtreyuBrokerageTests : BrokerageTests
     {
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
         {
@@ -65,10 +62,10 @@ namespace QuantConnect.Atreyu.Tests
             return 0;
         }
 
-        private static Symbol StaticSymbol => QuantConnect.Symbol.Create("ORCL", SecurityType.Equity, Market.USA);
-        private static Symbol GESymbol => QuantConnect.Symbol.Create("GE", SecurityType.Equity, Market.USA);
-        private static Symbol ORCLSymbol => QuantConnect.Symbol.Create("ORCL", SecurityType.Equity, Market.USA);
-        private static Symbol NVDASymbol => QuantConnect.Symbol.Create("NVDA", SecurityType.Equity, Market.USA);
+        private static Symbol StaticSymbol => Symbol.Create("ORCL", SecurityType.Equity, Market.USA);
+        private static Symbol GESymbol => Symbol.Create("GE", SecurityType.Equity, Market.USA);
+        private static Symbol ORCLSymbol => Symbol.Create("ORCL", SecurityType.Equity, Market.USA);
+        private static Symbol NVDASymbol => Symbol.Create("NVDA", SecurityType.Equity, Market.USA);
 
         /// <summary>
         /// Gets the symbol to be traded, must be shortable
@@ -237,8 +234,8 @@ namespace QuantConnect.Atreyu.Tests
                 {
                     BrokerageData = new Dictionary<string, string>()
                     {
-                        { "atreyu-cash-balance", "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]" },
-                        { "atreyu-holdings", "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10, \"Type\":1 }]" }
+                        { "live-cash-balance", "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]" },
+                        { "live-holdings", "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10 }]" }
                     }
                 });
 
@@ -275,8 +272,8 @@ namespace QuantConnect.Atreyu.Tests
                 {
                     BrokerageData = new Dictionary<string, string>()
                     {
-                        { "atreyu-cash-balance", "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]" },
-                        { "atreyu-holdings", "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10, \"Type\":1 }]" }
+                        { "live-cash-balance", "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]" },
+                        { "live-holdings", "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10 }]" }
                     }
                 });
 
@@ -307,8 +304,8 @@ namespace QuantConnect.Atreyu.Tests
                 {
                     BrokerageData = new Dictionary<string, string>()
                     {
-                        { "atreyu-cash-balance", "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]" },
-                        { "atreyu-holdings", "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10, \"Type\":1 }]" }
+                        { "live-cash-balance", "[{\"currency\":\"usd\", \"amount\":1000.0}, {\"currency\":\"eur\", \"amount\":100.0}]" },
+                        { "live-holdings", "[{\"AveragePrice\": 5,\"Quantity\": 33,\"Symbol\": {\"Value\": \"GME\",\"ID\": \"GME 2T\",\"Permtick\": \"GME\"},\"MarketPrice\": 10 }]" }
                     }
                 });
 

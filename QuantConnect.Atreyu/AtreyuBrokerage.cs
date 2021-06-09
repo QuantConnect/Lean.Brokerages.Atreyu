@@ -50,7 +50,6 @@ namespace QuantConnect.Atreyu
         private readonly string _locateRqd;     //flag used in combination with BROKERID(5700) to indicate that Shared have located
 
         // Atreyu State Information
-        private List<Client.Messages.Position> _positions;
         private List<Client.Messages.Order> _orders;
 
         /// <summary>
@@ -187,43 +186,12 @@ namespace QuantConnect.Atreyu
 
         public override List<Holding> GetAccountHoldings()
         {
-            if (Log.DebuggingEnabled)
-            {
-                Log.Debug("AtreyuBrokerage.GetAccountHoldings()");
-            }
-
-            if (_job.BrokerageData.TryGetValue("atreyu-holdings", out string value) && !string.IsNullOrEmpty(value))
-            {
-                // remove the key, we really only want to return the cached value on the first request
-                _job.BrokerageData.Remove("atreyu-holdings");
-
-                return JsonConvert.DeserializeObject<List<Holding>>(value);
-            }
-
-            return (_securityProvider as SecurityPortfolioManager)?.Securities
-                .Where(kvp => kvp.Value.Holdings.AbsoluteQuantity > 0)
-                .OrderBy(kvp => kvp.Value.Symbol)
-                .Select(kvp => new Holding(kvp.Value)).ToList() ?? new List<Holding>();
+            return GetAccountHoldings(_job.BrokerageData, (_securityProvider as SecurityPortfolioManager)?.Securities.Values);
         }
 
         public override List<CashAmount> GetCashBalance()
         {
-            if (Log.DebuggingEnabled)
-            {
-                Log.Debug("AtreyuBrokerage.GetCashBalance()");
-            }
-
-            if (_job.BrokerageData.TryGetValue("atreyu-cash-balance", out string value) && !string.IsNullOrEmpty(value))
-            {
-                // remove the key, we really only want to return the cached value on the first request
-                _job.BrokerageData.Remove("atreyu-cash-balance");
-
-                return JsonConvert.DeserializeObject<List<CashAmount>>(value);
-            }
-
-            return (_securityProvider as SecurityPortfolioManager)?.CashBook
-                .Select(x => new CashAmount(x.Value.Amount, x.Value.Symbol))
-                .ToList() ?? new List<CashAmount>();
+            return GetCashBalance(_job.BrokerageData, (_securityProvider as SecurityPortfolioManager)?.CashBook);
         }
 
         public override bool PlaceOrder(Order order)
@@ -446,7 +414,6 @@ namespace QuantConnect.Atreyu
                 var response = _zeroMQ.Logon(_lastMsgSeqNum);
                 if (response.Status == 0)
                 {
-                    _positions = response.Positions.ToList();
                     _orders = response.Orders.ToList();
                 }
             }

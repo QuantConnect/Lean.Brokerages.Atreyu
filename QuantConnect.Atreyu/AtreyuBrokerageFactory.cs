@@ -60,8 +60,8 @@ namespace QuantConnect.Atreyu
             { "atreyu-username", Config.Get("atreyu-username")},
             { "atreyu-password", Config.Get("atreyu-password")},
             { "atreyu-client-id", Config.Get("atreyu-client-id")},
-            { "atreyu-cash-balance", Config.Get("atreyu-cash-balance")},
-            { "atreyu-holdings", Config.Get("atreyu-holdings")},
+            { "live-cash-balance", Config.Get("live-cash-balance")},
+            { "live-holdings", Config.Get("live-holdings")},
             { "atreyu-broker-mpid", Config.Get("atreyu-broker-mpid")},
             { "atreyu-locate-rqd", Config.Get("atreyu-locate-rqd")}
         };
