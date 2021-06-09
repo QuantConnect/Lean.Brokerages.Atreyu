@@ -14,7 +14,6 @@
 */
 
 using System;
-using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Orders.TimeInForces;
 using QuantConnect.Securities;
@@ -91,27 +90,6 @@ namespace QuantConnect.Atreyu
                 //return "1";
                 default:
                     throw new ArgumentException("AtreyuBrokerage.ConvertTimeInForce: currently support only Day orders (TIF DAY). No DAY+/ GTX or GTC supported.");
-            }
-        }
-
-        private Holding ConvertHolding(Client.Messages.Position position)
-        {
-            try
-            {
-                // TODO: need data for holding?
-                return new Holding
-                {
-                    Symbol = _symbolMapper.GetLeanSymbol(position.Symbol, SecurityType.Crypto, Market.Bitfinex),
-                    //AveragePrice = position.BasePrice,
-                    //MarketPrice = position.BasePrice,
-                    Quantity = position.LongQty > 0 ? position.LongQty : position.ShortQty,
-                    CurrencySymbol = "$"
-                };
-            }
-            catch (Exception)
-            {
-                Log.Error($"AtreyuBrokerage.ConvertHolding(): failed to set {position.Symbol} market price");
-                throw;
             }
         }
 

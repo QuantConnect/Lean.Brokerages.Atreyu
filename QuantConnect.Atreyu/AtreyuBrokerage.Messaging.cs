@@ -22,7 +22,6 @@ using System.Collections.Concurrent;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using QuantConnect.Atreyu.Client.Messages;
-using Order = QuantConnect.Orders.Order;
 
 namespace QuantConnect.Atreyu
 {
