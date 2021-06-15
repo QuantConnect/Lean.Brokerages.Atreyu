@@ -22,6 +22,7 @@ using NetMQ.Sockets;
 using Newtonsoft.Json;
 using QuantConnect.Atreyu.Client.Messages;
 using QuantConnect.Logging;
+using QuantConnect.Securities;
 using QuantConnect.Util;
 
 namespace QuantConnect.Atreyu.Client
@@ -41,6 +42,7 @@ namespace QuantConnect.Atreyu.Client
         private readonly string _username;
         private readonly string _password;
 
+        private SecurityExchangeHours _securityExchangeHours;
         private CancellationTokenSource _cancellationTokenSource;
         private volatile bool _connected;
         private string _sessionId;
@@ -66,6 +68,40 @@ namespace QuantConnect.Atreyu.Client
             _subscribePort = subscribePort;
             _username = username;
             _password = password;
+
+            _cancellationTokenSource = new CancellationTokenSource();
+            _securityExchangeHours = MarketHoursDatabase.FromDataFolder()
+                .GetExchangeHours(Market.USA, null, SecurityType.Equity);
+
+            // we start a stask that will be in charge of expiring and refreshing our session id
+            Task.Factory.StartNew(() =>
+            {
+                while (!_cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        if (IsExchangeOpen())
+                        {
+                            if (_sessionId == null)
+                            {
+                                // refresh our session Id
+                                Logon(int.MaxValue);
+                            }
+                        }
+                        else
+                        {
+                            // our session Id expires each day
+                            _sessionId = null;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e);
+                    }
+
+                    _cancellationTokenSource.Token.WaitHandle.WaitOne(TimeSpan.FromMinutes(1));
+                }
+            });
         }
 
         /// <summary>
@@ -81,7 +117,6 @@ namespace QuantConnect.Atreyu.Client
 
             Log.Debug("Subscriber socket connected");
 
-            _cancellationTokenSource = new CancellationTokenSource();
             var token = _cancellationTokenSource.Token;
             Task.Factory.StartNew(() =>
             {
@@ -133,10 +168,13 @@ namespace QuantConnect.Atreyu.Client
         public LogonResponseMessage Logon(int start)
         {
             var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password) { MsgSeqNum = start });
-            if (response.Status != 0)
+
+            Log.Trace($"ZeroMQConnectionManager.Logon(): Response {response.Text}. Status {response.Status}");
+            // only throw if the exchange is open
+            if (IsExchangeOpen() && response.Status != 0)
             {
                 throw new Exception(
-                    $"AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate. Error {response.Text}");
+                    $"ZeroMQConnectionManager.Logon(): could not authenticate. Error {response.Text}. Status {response.Status}");
             }
 
             _sessionId = response.SessionId;
@@ -148,7 +186,7 @@ namespace QuantConnect.Atreyu.Client
         /// </summary>
         /// <param name="message">request message</param>
         /// <returns>message from the ResponseSocket</returns>
-        public string Send(RequestMessage message)
+        private string Send(RequestMessage message)
         {
             try
             {
@@ -165,7 +203,6 @@ namespace QuantConnect.Atreyu.Client
                             Log.Error($"ZeroMQConnectionManager.Send(): Atreyu session cannot be null or empty for this request.");
                             return null;
                         }
-
 
                         signedMessage.SessionId = _sessionId;
                     }
@@ -216,11 +253,6 @@ namespace QuantConnect.Atreyu.Client
             return default;
         }
 
-        private void OnMessageRecieved(string message)
-        {
-            MessageRecieved?.Invoke(this, message);
-        }
-
         /// <summary>
         /// Destroys connection to Atreyu. After this operation we can't reconnect
         /// </summary>
@@ -229,6 +261,17 @@ namespace QuantConnect.Atreyu.Client
             _cancellationTokenSource?.Cancel();
             // forcibly close the connection
             _subscribeSocket?.DisposeSafely();
+        }
+
+        private void OnMessageRecieved(string message)
+        {
+            MessageRecieved?.Invoke(this, message);
+        }
+
+        private bool IsExchangeOpen()
+        {
+            var localTime = DateTime.UtcNow.ConvertFromUtc(_securityExchangeHours.TimeZone);
+            return _securityExchangeHours.IsOpen(localTime, true);
         }
     }
 }
