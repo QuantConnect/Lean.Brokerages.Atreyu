@@ -168,11 +168,13 @@ namespace QuantConnect.Atreyu.Client
         public LogonResponseMessage Logon(int start)
         {
             var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password) { MsgSeqNum = start });
+
+            Log.Trace($"ZeroMQConnectionManager.Logon(): Response {response.Text}. Status {response.Status}");
             // only throw if the exchange is open
             if (IsExchangeOpen() && response.Status != 0)
             {
                 throw new Exception(
-                    $"AtreyuBrokerage: ZeroMQConnectionManager.Connect() could not authenticate. Error {response.Text}. Status {response.Status}");
+                    $"ZeroMQConnectionManager.Logon(): could not authenticate. Error {response.Text}. Status {response.Status}");
             }
 
             _sessionId = response.SessionId;
@@ -184,7 +186,7 @@ namespace QuantConnect.Atreyu.Client
         /// </summary>
         /// <param name="message">request message</param>
         /// <returns>message from the ResponseSocket</returns>
-        public string Send(RequestMessage message)
+        private string Send(RequestMessage message)
         {
             try
             {
