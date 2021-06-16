@@ -33,8 +33,8 @@ namespace QuantConnect.Atreyu.Client
     public class ZeroMQConnectionManager : IDisposable
     {
         private readonly SubscriberSocket _subscribeSocket;
-        private static TimeSpan _timeoutRequestResponse = TimeSpan.FromSeconds(10);
-        private static TimeSpan _timeoutPublishSubscribe = TimeSpan.FromSeconds(30);
+        private static TimeSpan _timeoutRequestResponse = TimeSpan.FromSeconds(20);
+        private static TimeSpan _timeoutPublishSubscribe = TimeSpan.FromSeconds(40);
 
         private readonly string _host;
         private readonly int _requestPort;
@@ -169,6 +169,11 @@ namespace QuantConnect.Atreyu.Client
         {
             var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password) { MsgSeqNum = start });
 
+            if (response == null)
+            {
+                Log.Error("ZeroMQConnectionManager.Logon(): got null response");
+            }
+
             Log.Trace($"ZeroMQConnectionManager.Logon(): Response {response.Text}. Status {response.Status}");
             // only throw if the exchange is open
             if (IsExchangeOpen() && response.Status != 0)
@@ -271,7 +276,7 @@ namespace QuantConnect.Atreyu.Client
         private bool IsExchangeOpen()
         {
             var localTime = DateTime.UtcNow.ConvertFromUtc(_securityExchangeHours.TimeZone);
-            return _securityExchangeHours.IsOpen(localTime, true);
+            return _securityExchangeHours.IsOpen(localTime, false);
         }
     }
 }

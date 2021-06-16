@@ -62,8 +62,10 @@ namespace QuantConnect.Atreyu
                 //If not then a Logon must re - issued re - synchronise the engine states
                 if (!_resetting && (_lastMsgSeqNum + 1 < newMsgSeqNum))
                 {
+                    Log.Error($"AtreyuBrokerage.OnMessage(): unexpected sequence number, expected {_lastMsgSeqNum + 1} but was {newMsgSeqNum}. Restarting session. Message: {message}");
+
                     var response = _zeroMQ.Logon(_lastMsgSeqNum);
-                    if (response.Status != 0)
+                    if (response == null || response.Status != 0)
                     {
                         throw new Exception("Could not re-login to Atreyu.");
                     }
@@ -191,8 +193,14 @@ namespace QuantConnect.Atreyu
                 var fillPrice = report.LastPx;
                 var fillQuantity = order.Direction == OrderDirection.Sell ? -report.LastShares : report.LastShares;
                 var updTime = Time.ParseFIXUtcTimestamp(report.TransactTime);
-                var orderFee = security.FeeModel.GetOrderFee(new OrderFeeParameters(security, order));
                 var status = ConvertOrderStatus(report.OrdStatus);
+                var orderFee = OrderFee.Zero;
+                if (report.LastShares != 0)
+                {
+                    // create a new order just with the filled shares 'report.LastShares', so partial fills have fees
+                    var reducedOrder = new MarketOrder(order.Symbol, report.LastShares, order.Time, order.Tag, order.Properties);
+                    orderFee = security.FeeModel.GetOrderFee(new OrderFeeParameters(security, reducedOrder));
+                }
                 var orderEvent = new OrderEvent
                 (
                     order.Id, order.Symbol, updTime, status,
