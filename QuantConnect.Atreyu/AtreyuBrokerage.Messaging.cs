@@ -62,8 +62,10 @@ namespace QuantConnect.Atreyu
                 //If not then a Logon must re - issued re - synchronise the engine states
                 if (!_resetting && (_lastMsgSeqNum + 1 < newMsgSeqNum))
                 {
+                    Log.Error($"AtreyuBrokerage.OnMessage(): unexpected sequence number, expected {_lastMsgSeqNum + 1} but was {newMsgSeqNum}. Restarting session. Message: {message}");
+
                     var response = _zeroMQ.Logon(_lastMsgSeqNum);
-                    if (response.Status != 0)
+                    if (response == null || response.Status != 0)
                     {
                         throw new Exception("Could not re-login to Atreyu.");
                     }
