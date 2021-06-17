@@ -20,6 +20,7 @@ using QuantConnect.Orders.Fees;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading;
 using Newtonsoft.Json.Linq;
 using QuantConnect.Atreyu.Client.Messages;
 
@@ -27,7 +28,7 @@ namespace QuantConnect.Atreyu
 {
     public partial class AtreyuBrokerage
     {
-        private volatile bool _streamLocked;
+        private readonly object _streamLocked = new object();
         private readonly ConcurrentQueue<ExecutionReport> _messageBuffer = new ConcurrentQueue<ExecutionReport>();
         private readonly string[] _notMappedStatuses = { "PENDING_REPLACE" };
 
@@ -78,49 +79,65 @@ namespace QuantConnect.Atreyu
                 return;
             }
 
+            ExecutionReport report = null;
+
             // we can ignore not-execution messages
-            // TODO: subscribe to channels that we really need and miss others
-            if (!token.TryGetValue("ExecType", StringComparison.OrdinalIgnoreCase, out _) &&
-                !token.TryGetValue("CxlRejReason", StringComparison.OrdinalIgnoreCase, out _))
+            if (token.TryGetValue("ExecType", StringComparison.OrdinalIgnoreCase, out _)
+                || token.TryGetValue("CxlRejReason", StringComparison.OrdinalIgnoreCase, out _))
             {
-                return;
+                report = token.ToObject<ExecutionReport>();
             }
 
-            var report = token.ToObject<ExecutionReport>();
-            try
+            if (Monitor.TryEnter(_streamLocked))
             {
-                if (_streamLocked)
+                try
                 {
-                    _messageBuffer.Enqueue(report);
-                    return;
+                    // even though report is null let's consume any remaining message
+                    ProcessMessages(report);
+                }
+                catch (Exception err)
+                {
+                    Log.Error(err);
+                }
+                finally
+                {
+                    Monitor.Exit(_streamLocked);
                 }
             }
-            catch (Exception err)
+            else
             {
-                Log.Error(err);
+                if (report != null)
+                {
+                    // if someone has the lock just enqueue the report they will process any remaining messages
+                    // if by chance they are about to free the lock, no worries, we will always process first any remaining message first see 'ProcessMessages'
+                    _messageBuffer.Enqueue(report);
+                }
             }
-
-            OnMessageImpl(report);
         }
 
         private void OnMessageImpl(ExecutionReport report)
         {
-
-            switch (report)
+            try
             {
-                case FillOrderReport fill:
-                    OnOrderFill(fill);
-                    break;
-                case OrderCancelRejectReport reject:
-                    OnCancelRejected(reject);
-                    break;
-                case ExecutionReport execution:
-                    OnExecution(execution);
-                    break;
-                default:
-                    throw new InvalidOperationException($"AtreyuBrokerage: execution type is not supported; received {report.ExecType}");
+                switch (report)
+                {
+                    case FillOrderReport fill:
+                        OnOrderFill(fill);
+                        break;
+                    case OrderCancelRejectReport reject:
+                        OnCancelRejected(reject);
+                        break;
+                    case ExecutionReport execution:
+                        OnExecution(execution);
+                        break;
+                    default:
+                        throw new InvalidOperationException($"AtreyuBrokerage: execution type is not supported; received {report.ExecType}");
+                }
             }
-
+            catch (Exception e)
+            {
+                Log.Error(e);
+            }
         }
 
         private void OnExecution(ExecutionReport report)
@@ -239,37 +256,36 @@ namespace QuantConnect.Atreyu
         /// <summary>
         /// Lock the streaming processing while we're sending orders as sometimes they fill before the REST call returns.
         /// </summary>
-        private void LockStream()
-        {
-            _streamLocked = true;
-        }
-
-        /// <summary>
-        /// Unlock stream and process all backed up messages.
-        /// </summary>
-        private void UnlockStream()
-        {
-            while (_messageBuffer.Any())
-            {
-                _messageBuffer.TryDequeue(out var e);
-
-                OnMessageImpl(e);
-            }
-
-            // Once dequeued in order; unlock stream.
-            _streamLocked = false;
-        }
-
         private void WithLockedStream(Action code)
         {
+            Monitor.Enter(_streamLocked);
             try
             {
-                LockStream();
                 code();
             }
             finally
             {
-                UnlockStream();
+                ProcessMessages();
+
+                Monitor.Exit(_streamLocked);
+            }
+        }
+
+        /// <summary>
+        /// Process any pending message and the provided one if any
+        /// </summary>
+        /// <remarks>To be called owing the stream lock</remarks>
+        private void ProcessMessages(ExecutionReport report = null)
+        {
+            // double check there isn't any pending message
+            while (_messageBuffer.TryDequeue(out var e))
+            {
+                OnMessageImpl(e);
+            }
+
+            if (report != null)
+            {
+                OnMessageImpl(report);
             }
         }
     }
