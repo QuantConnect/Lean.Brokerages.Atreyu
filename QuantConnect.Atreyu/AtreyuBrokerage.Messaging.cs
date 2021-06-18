@@ -34,6 +34,7 @@ namespace QuantConnect.Atreyu
 
         // MaxValue allows to prevent previous messages
         private int _lastMsgSeqNum = int.MaxValue;
+        private int _resetMsgSeqNum = int.MaxValue;
         private bool _resetting = false;
         public void OnMessage(string message)
         {
@@ -52,11 +53,18 @@ namespace QuantConnect.Atreyu
             // Atreyu Message Gateway (AMG)
             // adds a message sequence number to each message is sends on the PUB/SUB channel
             var newMsgSeqNum = token.Value<int>("MsgSeqNum");
-            if (_lastMsgSeqNum == int.MaxValue || (_lastMsgSeqNum + 1 == newMsgSeqNum))
+            if (_lastMsgSeqNum == int.MaxValue || (_lastMsgSeqNum + 1 == newMsgSeqNum) || _resetMsgSeqNum <= newMsgSeqNum)
             {
                 // checks that the sequence number of the next message to be processed is one greater than the last message
                 _resetting = false;
                 _lastMsgSeqNum = token.Value<int>("MsgSeqNum");
+
+                if (_resetMsgSeqNum <= newMsgSeqNum)
+                {
+                    Log.Error($"AtreyuBrokerage.OnMessage(): unexpected replay sequence number, expected {_lastMsgSeqNum + 1} but was {newMsgSeqNum}");
+                }
+                // refresh
+                _resetMsgSeqNum = int.MaxValue;
             }
             else
             {
@@ -65,17 +73,19 @@ namespace QuantConnect.Atreyu
                 {
                     Log.Error($"AtreyuBrokerage.OnMessage(): unexpected sequence number, expected {_lastMsgSeqNum + 1} but was {newMsgSeqNum}. Restarting session. Message: {message}");
 
+                    // we relogin with the last sequence number we got so that any missing message is replayed
                     var response = _zeroMQ.Logon(_lastMsgSeqNum);
                     if (response == null || response.Status != 0)
                     {
                         throw new Exception("Could not re-login to Atreyu.");
                     }
 
+                    // we keep the sequence number that caused us to reset as a safe guard in case replay doesn't work as we expect it to
+                    _resetMsgSeqNum = newMsgSeqNum;
                     _resetting = true;
-
-                    // we should clear buffer as AMG re-play all messages starting from specific point
-                    _messageBuffer.Clear();
                 }
+
+                // drop repeated messages
                 return;
             }
 

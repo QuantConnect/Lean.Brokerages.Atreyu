@@ -118,6 +118,8 @@ namespace QuantConnect.Atreyu.Client
             Log.Debug("Subscriber socket connected");
 
             var token = _cancellationTokenSource.Token;
+            _connected = true;
+
             Task.Factory.StartNew(() =>
             {
                 while (true)
@@ -127,7 +129,7 @@ namespace QuantConnect.Atreyu.Client
                         if (token.IsCancellationRequested || !_connected)
                             break;
 
-                        if (_subscribeSocket.TryReceiveFrameString(_timeoutPublishSubscribe, out var messageReceived))
+                        if (_subscribeSocket.TryReceiveFrameString(out var messageReceived))
                         {
                             OnMessageRecieved(messageReceived);
                             continue;
@@ -146,8 +148,6 @@ namespace QuantConnect.Atreyu.Client
 
                 Log.Trace("ZeroMQConnectionManager: stopped polling messages");
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-
-            _connected = true;
         }
 
         /// <summary>
@@ -276,7 +276,7 @@ namespace QuantConnect.Atreyu.Client
         private bool IsExchangeOpen()
         {
             var localTime = DateTime.UtcNow.ConvertFromUtc(_securityExchangeHours.TimeZone);
-            return _securityExchangeHours.IsOpen(localTime, false);
+            return _securityExchangeHours.IsOpen(localTime, true);
         }
     }
 }
