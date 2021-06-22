@@ -128,6 +128,8 @@ namespace QuantConnect.Atreyu.Client
                 var timeoutLoop = TimeSpan.FromMinutes(1);
                 while (!_cancellationTokenSource.Token.IsCancellationRequested)
                 {
+                    _cancellationTokenSource.Token.WaitHandle.WaitOne(timeoutLoop);
+
                     try
                     {
                         if (_connected && IsExchangeOpen())
@@ -157,8 +159,6 @@ namespace QuantConnect.Atreyu.Client
                     {
                         Log.Error(e);
                     }
-
-                    _cancellationTokenSource.Token.WaitHandle.WaitOne(timeoutLoop);
                 }
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
