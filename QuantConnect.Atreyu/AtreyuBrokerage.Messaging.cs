@@ -36,20 +36,8 @@ namespace QuantConnect.Atreyu
         private int _lastMsgSeqNum = int.MaxValue;
         private int _resetMsgSeqNum = int.MaxValue;
         private bool _resetting = false;
-        public void OnMessage(string message)
+        public void OnMessage(JObject token)
         {
-            var token = JObject.Parse(message);
-            var msgType = token.GetValue("MsgType", StringComparison.OrdinalIgnoreCase)?.Value<string>();
-            if (string.IsNullOrEmpty(msgType))
-            {
-                throw new ArgumentException("Message type is not specified.");
-            }
-
-            if (Log.DebuggingEnabled)
-            {
-                Log.Debug(message);
-            }
-
             // Atreyu Message Gateway (AMG)
             // adds a message sequence number to each message is sends on the PUB/SUB channel
             var newMsgSeqNum = token.Value<int>("MsgSeqNum");
@@ -71,7 +59,7 @@ namespace QuantConnect.Atreyu
                 //If not then a Logon must re - issued re - synchronise the engine states
                 if (!_resetting && (_lastMsgSeqNum + 1 < newMsgSeqNum))
                 {
-                    Log.Error($"AtreyuBrokerage.OnMessage(): unexpected sequence number, expected {_lastMsgSeqNum + 1} but was {newMsgSeqNum}. Restarting session. Message: {message}");
+                    Log.Error($"AtreyuBrokerage.OnMessage(): unexpected sequence number, expected {_lastMsgSeqNum + 1} but was {newMsgSeqNum}. Restarting session. Message: {token}");
 
                     // we relogin with the last sequence number we got so that any missing message is replayed
                     var response = _zeroMQ.Logon(_lastMsgSeqNum);

@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using QuantConnect.Atreyu.Client.Messages;
 using QuantConnect.Logging;
 using QuantConnect.Securities;
@@ -37,6 +38,7 @@ namespace QuantConnect.Atreyu.Client
         private static TimeSpan _timeoutPublishSubscribe = TimeSpan.FromSeconds(40);
 
         private readonly string _host;
+        private int _heartBeatMonitor;
         private readonly int _requestPort;
         private readonly int _subscribePort;
         private readonly string _username;
@@ -47,7 +49,7 @@ namespace QuantConnect.Atreyu.Client
         private volatile bool _connected;
         private string _sessionId;
 
-        public event EventHandler<string> MessageRecieved;
+        public event EventHandler<JObject> MessageRecieved;
 
         public bool IsConnected => _connected && !string.IsNullOrEmpty(_sessionId);
 
@@ -72,36 +74,6 @@ namespace QuantConnect.Atreyu.Client
             _cancellationTokenSource = new CancellationTokenSource();
             _securityExchangeHours = MarketHoursDatabase.FromDataFolder()
                 .GetExchangeHours(Market.USA, null, SecurityType.Equity);
-
-            // we start a stask that will be in charge of expiring and refreshing our session id
-            Task.Factory.StartNew(() =>
-            {
-                while (!_cancellationTokenSource.Token.IsCancellationRequested)
-                {
-                    try
-                    {
-                        if (IsExchangeOpen())
-                        {
-                            if (_sessionId == null)
-                            {
-                                // refresh our session Id
-                                Logon(int.MaxValue);
-                            }
-                        }
-                        else
-                        {
-                            // our session Id expires each day
-                            _sessionId = null;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Error(e);
-                    }
-
-                    _cancellationTokenSource.Token.WaitHandle.WaitOne(TimeSpan.FromMinutes(1));
-                }
-            });
         }
 
         /// <summary>
@@ -120,6 +92,7 @@ namespace QuantConnect.Atreyu.Client
             var token = _cancellationTokenSource.Token;
             _connected = true;
 
+            // we start a task to consume messages
             Task.Factory.StartNew(() =>
             {
                 while (true)
@@ -147,6 +120,46 @@ namespace QuantConnect.Atreyu.Client
                 }
 
                 Log.Trace("ZeroMQConnectionManager: stopped polling messages");
+            }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+            // we start a stask that will be in charge of expiring and refreshing our session id
+            Task.Factory.StartNew(() =>
+            {
+                var timeoutLoop = TimeSpan.FromMinutes(1);
+                while (!_cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        if (_connected && IsExchangeOpen())
+                        {
+                            if (Interlocked.Increment(ref _heartBeatMonitor) > 5 || _sessionId == null)
+                            {
+                                Log.Error($"ZeroMQConnectionManager(): last heart beat {_heartBeatMonitor * timeoutLoop}, resetting connection...");
+
+                                _subscribeSocket.Disconnect(_host + $":{_subscribePort}");
+                                _subscribeSocket.Connect(_host + $":{_subscribePort}");
+                                _subscribeSocket.SubscribeToAnyTopic();
+
+                                // refresh our session Id
+                                Logon(int.MaxValue);
+
+                                // clear
+                                Interlocked.Exchange(ref _heartBeatMonitor, 0);
+                            }
+                        }
+                        else
+                        {
+                            // our session Id expires each day
+                            _sessionId = null;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e);
+                    }
+
+                    _cancellationTokenSource.Token.WaitHandle.WaitOne(timeoutLoop);
+                }
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
@@ -270,7 +283,26 @@ namespace QuantConnect.Atreyu.Client
 
         private void OnMessageRecieved(string message)
         {
-            MessageRecieved?.Invoke(this, message);
+            if (Log.DebuggingEnabled)
+            {
+                Log.Debug(message);
+            }
+
+            var token = JObject.Parse(message);
+
+            var msgType = token.GetValue("MsgType", StringComparison.OrdinalIgnoreCase)?.Value<string>();
+            if (string.IsNullOrEmpty(msgType))
+            {
+                throw new ArgumentException("Message type is not specified.");
+            }
+
+            if (string.Equals(msgType, "Heartbeat", StringComparison.InvariantCultureIgnoreCase))
+            {
+                Interlocked.Exchange(ref _heartBeatMonitor, 0);
+                return;
+            }
+
+            MessageRecieved?.Invoke(this, token);
         }
 
         private bool IsExchangeOpen()
