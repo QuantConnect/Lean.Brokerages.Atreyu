@@ -411,7 +411,7 @@ namespace QuantConnect.Atreyu
             if (!_zeroMQ.IsConnected)
             {
                 _zeroMQ.Connect();
-                var response = _zeroMQ.Logon(_lastMsgSeqNum);
+                var response = _zeroMQ.Logon();
                 // logon can fail outside market hours, which is expected but we don't want to fail because of it
                 if (response != null && response.Status == 0)
                 {
