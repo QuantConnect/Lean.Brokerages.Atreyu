@@ -33,7 +33,6 @@ namespace QuantConnect.Atreyu.Client
     /// </summary>
     public class ZeroMQConnectionManager : IDisposable
     {
-        private SubscriberSocket _subscribeSocket;
         private static TimeSpan _timeoutRequestResponse = TimeSpan.FromSeconds(20);
         private static TimeSpan _timeoutPublishSubscribe = TimeSpan.FromSeconds(40);
 
@@ -45,6 +44,7 @@ namespace QuantConnect.Atreyu.Client
         private readonly string _password;
 
         private SecurityExchangeHours _securityExchangeHours;
+        private readonly SubscriberSocket _subscribeSocket;
         private CancellationTokenSource _cancellationTokenSource;
         private volatile bool _connected;
         private string _sessionId;
@@ -109,7 +109,7 @@ namespace QuantConnect.Atreyu.Client
 
                         if (_subscribeSocket.TryReceiveFrameString(_timeoutPublishSubscribe, out var messageReceived))
                         {
-                            OnMessageRecieved(messageReceived);
+                            OnMessageReceived(messageReceived);
                             continue;
                         }
 
@@ -122,7 +122,7 @@ namespace QuantConnect.Atreyu.Client
                     {
                         Log.Error($"ZeroMQConnectionManager.PUBSUB(): error occurs. Message: {e.Message}");
                         // if we are reconnecting allow some time for the 'subscribeSocket' instance to be refreshed
-                        Thread.Sleep(250);
+                        Thread.Sleep(1000);
                     }
                 }
 
@@ -149,7 +149,6 @@ namespace QuantConnect.Atreyu.Client
                                 try
                                 {
                                     _subscribeSocket.Disconnect(_host + $":{_subscribePort}");
-                                    _subscribeSocket.DisposeSafely();
                                 }
                                 catch
                                 {
@@ -158,7 +157,6 @@ namespace QuantConnect.Atreyu.Client
                                 Thread.Sleep(100);
 
                                 // create a new instance
-                                _subscribeSocket = new SubscriberSocket();
                                 _lastMsgSeqNum = int.MaxValue;
                                 _subscribeSocket.Connect(_host + $":{_subscribePort}");
                                 _subscribeSocket.SubscribeToAnyTopic();
@@ -302,7 +300,7 @@ namespace QuantConnect.Atreyu.Client
             _subscribeSocket?.DisposeSafely();
         }
 
-        private void OnMessageRecieved(string message)
+        private void OnMessageReceived(string message)
         {
             if (Log.DebuggingEnabled)
             {
@@ -333,7 +331,7 @@ namespace QuantConnect.Atreyu.Client
 
                 if (_resetMsgSeqNum <= newMsgSeqNum)
                 {
-                    Log.Error($"ZeroMQConnectionManager.OnMessageRecieved(): unexpected replay sequence number, expected {_lastMsgSeqNum + 1} but was {newMsgSeqNum}");
+                    Log.Error($"ZeroMQConnectionManager.OnMessageReceived(): unexpected replay sequence number, expected {_lastMsgSeqNum + 1} but was {newMsgSeqNum}");
                 }
                 // refresh
                 _resetMsgSeqNum = int.MaxValue;
@@ -343,8 +341,12 @@ namespace QuantConnect.Atreyu.Client
                 //If not then a Logon must re - issued re - synchronise the engine states
                 if (!_resetting && (_lastMsgSeqNum + 1 < newMsgSeqNum))
                 {
-                    Log.Error($"ZeroMQConnectionManager.OnMessageRecieved(): unexpected sequence number, expected {_lastMsgSeqNum + 1}" +
+                    Log.Error($"ZeroMQConnectionManager.OnMessageReceived(): unexpected sequence number, expected {_lastMsgSeqNum + 1}" +
                               $" but was {newMsgSeqNum}. Restarting session. Message: {token.ToString(Formatting.None)}");
+
+                    // we keep the sequence number that caused us to reset as a safe guard in case replay doesn't work as we expect it to
+                    _resetMsgSeqNum = newMsgSeqNum;
+                    _resetting = true;
 
                     // we relogin with the last sequence number we got so that any missing message is replayed
                     var response = Logon(_lastMsgSeqNum);
@@ -352,10 +354,6 @@ namespace QuantConnect.Atreyu.Client
                     {
                         throw new Exception("Could not re-login to Atreyu.");
                     }
-
-                    // we keep the sequence number that caused us to reset as a safe guard in case replay doesn't work as we expect it to
-                    _resetMsgSeqNum = newMsgSeqNum;
-                    _resetting = true;
                 }
 
                 // drop repeated messages
