@@ -161,13 +161,14 @@ namespace QuantConnect.Atreyu
                 throw new ArgumentNullException(nameof(clientId));
             }
 
+            _job = job;
             _clientId = clientId;
             _brokerMPID = brokerMPID;
             _locateRqd = locate;
             _orderProvider = orderProvider;
             _securityProvider = securityProvider;
             _symbolMapper = new AtreyuSymbolMapper();
-            _job = job;
+            _messageHandler = new BrokerageConcurrentMessageHandler<ExecutionReport>(OnMessageImpl);
 
             _zeroMQ = new ZeroMQConnectionManager(host, requestPort, subscribePort, username, password);
             _zeroMQ.MessageRecieved += (s, e) => OnMessage(e);
@@ -267,7 +268,7 @@ namespace QuantConnect.Atreyu
             }
 
             var submitted = false;
-            WithLockedStream(() =>
+            _messageHandler.WithLockedStream(() =>
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(request);
 
@@ -331,7 +332,7 @@ namespace QuantConnect.Atreyu
             }
 
             var submitted = false;
-            WithLockedStream(() =>
+            _messageHandler.WithLockedStream(() =>
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(request);
 
@@ -379,7 +380,7 @@ namespace QuantConnect.Atreyu
             }
 
             var submitted = false;
-            WithLockedStream(() =>
+            _messageHandler.WithLockedStream(() =>
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(new CancelEquityOrderMessage()
                 {
