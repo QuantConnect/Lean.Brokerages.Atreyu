@@ -13,23 +13,21 @@
  * limitations under the License.
 */
 
-using Newtonsoft.Json;
-using QuantConnect.Logging;
-using QuantConnect.Orders;
-using QuantConnect.Orders.Fees;
 using System;
-using System.Collections.Concurrent;
 using System.Linq;
-using System.Threading;
+using Newtonsoft.Json;
+using QuantConnect.Orders;
+using QuantConnect.Logging;
 using Newtonsoft.Json.Linq;
+using QuantConnect.Brokerages;
+using QuantConnect.Orders.Fees;
 using QuantConnect.Atreyu.Client.Messages;
 
 namespace QuantConnect.Atreyu
 {
     public partial class AtreyuBrokerage
     {
-        private readonly object _streamLocked = new object();
-        private readonly ConcurrentQueue<ExecutionReport> _messageBuffer = new ConcurrentQueue<ExecutionReport>();
+        private readonly BrokerageConcurrentMessageHandler<ExecutionReport> _messageHandler;
         private readonly string[] _notMappedStatuses = { "PENDING_REPLACE" };
 
         public void OnMessage(JObject token)
@@ -43,31 +41,7 @@ namespace QuantConnect.Atreyu
                 report = token.ToObject<ExecutionReport>();
             }
 
-            if (Monitor.TryEnter(_streamLocked))
-            {
-                try
-                {
-                    // even though report is null let's consume any remaining message
-                    ProcessMessages(report);
-                }
-                catch (Exception err)
-                {
-                    Log.Error(err);
-                }
-                finally
-                {
-                    Monitor.Exit(_streamLocked);
-                }
-            }
-            else
-            {
-                if (report != null)
-                {
-                    // if someone has the lock just enqueue the report they will process any remaining messages
-                    // if by chance they are about to free the lock, no worries, we will always process first any remaining message first see 'ProcessMessages'
-                    _messageBuffer.Enqueue(report);
-                }
-            }
+            _messageHandler.HandleNewMessage(report);
         }
 
         private void OnMessageImpl(ExecutionReport report)
@@ -205,42 +179,6 @@ namespace QuantConnect.Atreyu
                 {
                     Status = ConvertOrderStatus(report.OrdStatus)
                 });
-            }
-        }
-
-        /// <summary>
-        /// Lock the streaming processing while we're sending orders as sometimes they fill before the REST call returns.
-        /// </summary>
-        private void WithLockedStream(Action code)
-        {
-            Monitor.Enter(_streamLocked);
-            try
-            {
-                code();
-            }
-            finally
-            {
-                ProcessMessages();
-
-                Monitor.Exit(_streamLocked);
-            }
-        }
-
-        /// <summary>
-        /// Process any pending message and the provided one if any
-        /// </summary>
-        /// <remarks>To be called owing the stream lock</remarks>
-        private void ProcessMessages(ExecutionReport report = null)
-        {
-            // double check there isn't any pending message
-            while (_messageBuffer.TryDequeue(out var e))
-            {
-                OnMessageImpl(e);
-            }
-
-            if (report != null)
-            {
-                OnMessageImpl(report);
             }
         }
     }
