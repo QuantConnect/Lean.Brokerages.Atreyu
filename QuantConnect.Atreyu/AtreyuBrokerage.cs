@@ -170,7 +170,7 @@ namespace QuantConnect.Atreyu
             _symbolMapper = new AtreyuSymbolMapper();
             _messageHandler = new BrokerageConcurrentMessageHandler<ExecutionReport>(OnMessageImpl);
 
-            _zeroMQ = new ZeroMQConnectionManager(host, requestPort, subscribePort, username, password);
+            _zeroMQ = new ZeroMQConnectionManager("172.18.152.7", requestPort, subscribePort, username, password);
             _zeroMQ.MessageRecieved += (s, e) => OnMessage(e);
 
             // call home
