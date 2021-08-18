@@ -225,7 +225,7 @@ namespace QuantConnect.Atreyu
                 TimeInForce = ConvertTimeInForce(order.TimeInForce),
                 TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture),
                 Account = "DEFAULT",
-                ExDestination = "BTS"
+                ExDestination = "BATS"
             };
 
             if (request.Side.Equals("5") || request.Side.Equals("SELL_SHORT", StringComparison.OrdinalIgnoreCase))
@@ -325,7 +325,7 @@ namespace QuantConnect.Atreyu
                 OrderQty = (int)order.AbsoluteQuantity,
                 OrigClOrdID = order.BrokerId.Last(),
                 TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture),
-                ExDestination = "BTS"
+                ExDestination = "BATS"
             };
 
             if (order.Type == OrderType.Limit)
@@ -390,7 +390,7 @@ namespace QuantConnect.Atreyu
                     ClOrdID = GetNewOrdID(),
                     OrigClOrdID = order.BrokerId.Last(),
                     TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture),
-                    ExDestination = "BTS"
+                    ExDestination = "BATS"
                 });
 
                 if (response == null)
