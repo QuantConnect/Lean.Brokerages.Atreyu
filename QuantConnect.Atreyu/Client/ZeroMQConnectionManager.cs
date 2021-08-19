@@ -211,7 +211,7 @@ namespace QuantConnect.Atreyu.Client
             else
             {
                 Log.Trace($"ZeroMQConnectionManager.Logon(ExchangeOpen:{exchangeIsOpen}): Response {response.Text}. Status {response.Status}");
-                if (response.Status != 0)
+                if (response.Status == 0)
                 {
                     _sessionId = response.SessionId;
                 }
