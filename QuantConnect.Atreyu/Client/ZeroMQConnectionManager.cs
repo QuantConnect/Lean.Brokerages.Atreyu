@@ -139,7 +139,8 @@ namespace QuantConnect.Atreyu.Client
 
                     try
                     {
-                        if (_connected && IsExchangeOpen())
+                        // we start trying to reconnect during extended market hours so we are all set for normal hours
+                        if (_connected && IsExchangeOpen(extendedMarketHours: true))
                         {
                             if (Interlocked.Increment(ref _heartBeatMonitor) > 5 || _sessionId == null)
                             {
@@ -161,8 +162,8 @@ namespace QuantConnect.Atreyu.Client
                                 _subscribeSocket.Connect(_host + $":{_subscribePort}");
                                 _subscribeSocket.SubscribeToAnyTopic();
 
-                                // refresh our session Id
-                                Logon(int.MaxValue);
+                                // refresh our session Id. Will throw if it fails during normal & extended market hours
+                                Logon(int.MaxValue, extendedMarketHours: true);
 
                                 // clear
                                 Interlocked.Exchange(ref _heartBeatMonitor, 0);
@@ -196,25 +197,32 @@ namespace QuantConnect.Atreyu.Client
         /// FLIRT Logon,  initiates trading.
         /// The state information returned will include all current open orders as well as position information by account, symbol for thecurrent trading day
         /// </summary>
+        /// <remarks>Will throw an exception on failure if the market is open</remarks>
         /// <returns>state information on your trading for the current trading day</returns>
-        public LogonResponseMessage Logon(int? start = null)
+        public LogonResponseMessage Logon(int? start = null, bool extendedMarketHours = false)
         {
             var response = Send<LogonResponseMessage>(new LogonMessage(_username, _password) { MsgSeqNum = start ?? _lastMsgSeqNum });
 
+            var exchangeIsOpen = IsExchangeOpen(extendedMarketHours: extendedMarketHours);
             if (response == null)
             {
-                Log.Error("ZeroMQConnectionManager.Logon(): got null response");
+                Log.Error($"ZeroMQConnectionManager.Logon(ExchangeOpen:{exchangeIsOpen}): got null response");
             }
-
-            Log.Trace($"ZeroMQConnectionManager.Logon(): Response {response.Text}. Status {response.Status}");
-            // only throw if the exchange is open
-            if (IsExchangeOpen() && response.Status != 0)
+            else
             {
-                throw new Exception(
-                    $"ZeroMQConnectionManager.Logon(): could not authenticate. Error {response.Text}. Status {response.Status}");
+                Log.Trace($"ZeroMQConnectionManager.Logon(ExchangeOpen:{exchangeIsOpen}): Response {response.Text}. Status {response.Status}");
+                if (response.Status != 0)
+                {
+                    _sessionId = response.SessionId;
+                }
             }
 
-            _sessionId = response.SessionId;
+            // only throw if the exchange is open
+            if (exchangeIsOpen && (response == null || response.Status != 0))
+            {
+                throw new Exception($"ZeroMQConnectionManager.Logon(ExchangeOpen:{exchangeIsOpen}): could not authenticate. Error {response?.Text}. Status {response?.Status}");
+            }
+
             return response;
         }
 
@@ -349,6 +357,7 @@ namespace QuantConnect.Atreyu.Client
                     _resetting = true;
 
                     // we relogin with the last sequence number we got so that any missing message is replayed
+                    // will throw if it fails only during normal market hours
                     var response = Logon(_lastMsgSeqNum);
                     if (response == null || response.Status != 0)
                     {
@@ -363,10 +372,10 @@ namespace QuantConnect.Atreyu.Client
             MessageRecieved?.Invoke(this, token);
         }
 
-        private bool IsExchangeOpen()
+        private bool IsExchangeOpen(bool extendedMarketHours)
         {
             var localTime = DateTime.UtcNow.ConvertFromUtc(_securityExchangeHours.TimeZone);
-            return _securityExchangeHours.IsOpen(localTime, true);
+            return _securityExchangeHours.IsOpen(localTime, extendedMarketHours);
         }
     }
 }
