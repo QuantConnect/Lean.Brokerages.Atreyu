@@ -454,7 +454,7 @@ namespace QuantConnect.Atreyu
             var orderProperties = order.Properties as OrderProperties;
             if (orderProperties != null)
             {
-                exchangeDestination = orderProperties.Exchange;
+                exchangeDestination = orderProperties.Exchange.ToString();
             }
             if (string.IsNullOrEmpty(exchangeDestination) && order.Symbol.SecurityType == SecurityType.Equity)
             {
