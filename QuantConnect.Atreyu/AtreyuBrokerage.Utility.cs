@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Threading;
 using QuantConnect.Orders;
 using QuantConnect.Orders.TimeInForces;
 using QuantConnect.Securities;
@@ -22,6 +23,8 @@ namespace QuantConnect.Atreyu
 {
     public partial class AtreyuBrokerage
     {
+        private long _orderId;
+
         private Order ConvertOrder(Client.Messages.Order atreyuOrder)
         {
             Order leanOrder;
@@ -177,6 +180,10 @@ namespace QuantConnect.Atreyu
             }
         }
 
-        private string GetNewOrdID() => Guid.NewGuid().ToString().Replace("-", string.Empty);
+        /// <summary>
+        /// Returns a unique ID of 20 characters long with no `-`
+        /// Starts with incremental order id, 2 digit day, time with milliseconds and GUI substring to fill last characters
+        /// </summary>
+        private string GetNewOrdID() => $"{Interlocked.Increment(ref _orderId)}{DateTime.UtcNow:ddhhmmssffff}G{Guid.NewGuid():N}".Substring(0, 20);
     }
 }
