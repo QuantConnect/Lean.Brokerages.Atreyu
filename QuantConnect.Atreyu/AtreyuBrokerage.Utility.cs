@@ -184,6 +184,6 @@ namespace QuantConnect.Atreyu
         /// Returns a unique ID of 20 characters long with no `-`
         /// Starts with incremental order id, 2 digit day, time with milliseconds and GUI substring to fill last characters
         /// </summary>
-        private string GetNewOrdID() => $"{Interlocked.Increment(ref _orderId)}{DateTime.UtcNow:ddhhmmssffff}{Guid.NewGuid():N}".Substring(0, 20);
+        private string GetNewOrdID() => $"{Interlocked.Increment(ref _orderId)}{DateTime.UtcNow:ddhhmmssffff}G{Guid.NewGuid():N}".Substring(0, 20);
     }
 }
