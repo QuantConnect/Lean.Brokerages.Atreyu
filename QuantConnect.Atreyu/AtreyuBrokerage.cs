@@ -452,7 +452,7 @@ namespace QuantConnect.Atreyu
         {
             var exchangeDestination = string.Empty;
             var orderProperties = order.Properties as OrderProperties;
-            if (orderProperties != null)
+            if (orderProperties != null && orderProperties.Exchange != null)
             {
                 exchangeDestination = orderProperties.Exchange.ToString();
             }
