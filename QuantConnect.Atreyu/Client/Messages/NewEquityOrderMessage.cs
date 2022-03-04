@@ -48,12 +48,6 @@ namespace QuantConnect.Atreyu.Client.Messages
         [JsonProperty(PropertyName = "99")]
         public decimal StopPx { get; set; }
 
-        //[JsonProperty(PropertyName = "128", NullValueHandling = NullValueHandling.Ignore)]
-        //public string DeliverToCompID { get; set; }
-
-        [JsonProperty(PropertyName = "100", NullValueHandling = NullValueHandling.Ignore)]
-        public string ExDestination { get; set; }
-
         [JsonProperty(PropertyName = "18", NullValueHandling = NullValueHandling.Ignore)]
         public string ExecInst { get; set; }
 
