@@ -3,7 +3,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5207151E-CE80-450A-A057-9C3EB85010A5}</ProjectGuid>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>QuantConnect.Atreyu.Certification</AssemblyName>
     <RootNamespace>QuantConnect.Atreyu.Certification</RootNamespace>
     <Product>QuantConnect.Atreyu.Certification</Product>
