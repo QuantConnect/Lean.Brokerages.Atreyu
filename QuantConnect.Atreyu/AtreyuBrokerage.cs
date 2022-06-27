@@ -225,7 +225,8 @@ namespace QuantConnect.Atreyu
                 //DeliverToCompID = "QC-CS-INET",
                 TimeInForce = ConvertTimeInForce(order.TimeInForce),
                 TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture),
-                Account = "DEFAULT"
+                Account = "DEFAULT",
+                ExDestination = GetOrderExchange(order)
             };
 
             if (request.Side.Equals("5") || request.Side.Equals("SELL_SHORT", StringComparison.OrdinalIgnoreCase))
@@ -325,6 +326,7 @@ namespace QuantConnect.Atreyu
                 OrderQty = (int)order.AbsoluteQuantity,
                 OrigClOrdID = order.BrokerId.Last(),
                 TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture),
+                ExDestination =  GetOrderExchange(order)
             };
 
             if (order.Type == OrderType.Limit)
@@ -389,6 +391,7 @@ namespace QuantConnect.Atreyu
                     ClOrdID = GetNewOrdID(),
                     OrigClOrdID = order.BrokerId.Last(),
                     TransactTime = DateTime.UtcNow.ToString(DateFormat.FIXWithMillisecond, CultureInfo.InvariantCulture),
+                    ExDestination = GetOrderExchange(order)
                 });
 
                 if (response == null)
@@ -443,6 +446,24 @@ namespace QuantConnect.Atreyu
         public override IEnumerable<BaseData> GetHistory(HistoryRequest request)
         {
             throw new InvalidOperationException("Atreyu doesn't support history");
+        }
+
+        private string GetOrderExchange(Order order)
+        {
+            var exchangeDestination = string.Empty;
+            var orderProperties = order.Properties as OrderProperties;
+            if (orderProperties != null && orderProperties.Exchange != null)
+            {
+                exchangeDestination = orderProperties.Exchange.ToString();
+            }
+            if (string.IsNullOrEmpty(exchangeDestination) && order.Symbol.SecurityType == SecurityType.Equity)
+            {
+                var equity = _securityProvider.GetSecurity(order.Symbol) as Equity;
+                // potentially need to map this into Atreyu expected destination exchange name
+                exchangeDestination = equity?.PrimaryExchange.ToString();
+            }
+
+            return exchangeDestination;
         }
 
         private class ModulesReadLicenseRead : Api.RestResponse
