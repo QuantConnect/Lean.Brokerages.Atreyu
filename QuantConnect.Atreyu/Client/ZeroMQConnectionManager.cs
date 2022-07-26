@@ -235,11 +235,13 @@ namespace QuantConnect.Atreyu.Client
         {
             try
             {
+                var startTime = DateTime.UtcNow;
                 // request, Unit Of Work pattern
                 // it can be less efficient that single client forever, but more reliable.
                 using (var requestSocket = new RequestSocket())
                 {
                     requestSocket.Connect(_host + $":{_requestPort}");
+                    var afterConnect = DateTime.UtcNow;
 
                     if (message is SignedMessage signedMessage)
                     {
@@ -259,12 +261,16 @@ namespace QuantConnect.Atreyu.Client
                         Log.Error($"ZeroMQConnectionManager.Send(): could not send message. Content: {JsonConvert.SerializeObject(message)}");
                         return null;
                     }
+                    var afterSend = DateTime.UtcNow;
 
                     if (!requestSocket.TryReceiveFrameString(_timeoutRequestResponse, out string response))
                     {
                         Log.Error($"ZeroMQConnectionManager.Send(): could not receive response within specified time. Timeout: {_timeoutRequestResponse.ToString("c", CultureInfo.InvariantCulture)}");
                         return null;
                     }
+                    var afterReceived = DateTime.UtcNow;
+
+                    Log.Trace($"ZeroMQConnectionManager.Send(): Connect: {afterConnect - startTime}. Send: {afterSend - afterConnect}. Receive {afterReceived - afterSend}");
                     return response;
                 }
             }
@@ -314,6 +320,7 @@ namespace QuantConnect.Atreyu.Client
             {
                 Log.Debug(message);
             }
+            Log.Trace($"AtreyuBrokerage.OnMessageReceived(): {DateTime.UtcNow}");
 
             var token = JObject.Parse(message);
 
