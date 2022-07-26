@@ -270,6 +270,7 @@ namespace QuantConnect.Atreyu
             }
 
             var submitted = false;
+            var startTime = DateTime.UtcNow;
             _messageHandler.WithLockedStream(() =>
             {
                 var response = _zeroMQ.Send<SubmitResponseMessage>(request);
@@ -303,6 +304,7 @@ namespace QuantConnect.Atreyu
                     OnMessage(new BrokerageMessageEvent(BrokerageMessageType.Warning, -1, message));
                 }
             });
+            Log.Trace($"AtreyuBrokerage.PlaceOrder({order.Id}): took: {DateTime.UtcNow - startTime}");
             return submitted;
         }
 

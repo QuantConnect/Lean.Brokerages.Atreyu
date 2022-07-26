@@ -83,6 +83,7 @@ namespace QuantConnect.Atreyu
             var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
             if (order != null)
             {
+                Log.Trace($"AtreyuBrokerage.OnExecution({order.Id}): {DateTime.UtcNow}");
                 OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, $"Atreyu Order Event. Message: {report.Text}")
                 {
                     Status = ConvertOrderStatus(report.OrdStatus)
