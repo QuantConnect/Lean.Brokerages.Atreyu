@@ -24,7 +24,11 @@ This repository hosts the Atreyu Trading Brokerage Plugin Integration with the Q
 
 
 ## Using the Brokerage Plugin
+  
+### QuantConnect Cloud
 
+  This plugin is integrated in the QuantConnect Cloud Platform where you can use this integration with a simple visual interface, and harness the QuantConnect Live Data Feed. For most users this is substantially cheaper and easier than self-hosting. For more information see the [QuantConnect-Atreyu Integration Page](https://www.quantconnect.com/brokerages/atreyu). 
+  
 ### Locally
 
 Follow these steps to start local live trading with the Atreyu brokerage:
@@ -134,11 +138,6 @@ If you select Polygon Data Feed, see [Polygon](https://www.quantconnect.com/docs
 9. View the result in the `<projectName>`/live/`<timestamp>` directory. Results are stored in real-time in JSON format. You can save results to a different directory by providing the --output `<path>` option in step 2.
 
 If you already have a live environment configured in your [Lean configuration file](https://www.quantconnect.com/docs/v2/lean-cli/initialization/configuration#03-Lean-Configuration), you can skip the interactive wizard by providing the --environment `<value>` option in step 2. The value of this option must be the name of an environment which has live-mode set to true.
-
-
-### QuantConnect Cloud
-
-  This plugin is integrated in the QuantConnect Cloud Platform where you can use this integration with a simple visual interface, and harness the QuantConnect Live Data Feed. For most users this is substantially cheaper and easier than self-hosting. For more information see the [QuantConnect-Atreyu Integration Page](https://www.quantconnect.com/brokerages/atreyu). 
 
 ## Account Types
 
