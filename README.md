@@ -56,7 +56,8 @@ Follow these steps to start local live trading with the Atreyu brokerage:
     12. Trading Technologies
     13. Kraken
     14. FTX
-    Enter an option: ```
+    Enter an option: 
+  ```
   
 3.  Enter the number of the organization that has a subscription for the Atreyu module.
 
@@ -67,7 +68,8 @@ Follow these steps to start local live trading with the Atreyu brokerage:
     1. Organization 1
     2. Organization 2
     3. Organization 3
-       Enter an option: 1```
+       Enter an option: 1
+  ```
 
 4.  Enter the [Atreyu Trading](https://qnt.co/atreyu) server configuration.
 
@@ -76,7 +78,8 @@ Follow these steps to start local live trading with the Atreyu brokerage:
     
     Host:
     Request port:
-    Subscribe port:```
+    Subscribe port:
+  ```
 
 5.  Enter your [Atreyu Trading](https://qnt.co/atreyu) credentials.
 
@@ -85,7 +88,8 @@ Follow these steps to start local live trading with the Atreyu brokerage:
 
     Username:
     Password:
-    Client id:```
+    Client id:
+  ```
 
 6.  Enter the broker MPID to use.
 
@@ -100,7 +104,8 @@ Broker MPID:
     ```console
     $ lean live "My Project"
 
-Locate rqd:```
+    Locate rqd:
+  ```
 
 8.  Enter the number of the data feed to use and then follow the steps required for the data connection.
 
@@ -124,7 +129,8 @@ Locate rqd:```
     14. Polygon Data Feed
     15. Custom Data Only
   
-        To enter multiple options, separate them with comma:```
+        To enter multiple options, separate them with comma:
+  ```
 
 If you select IQFeed, see [IQFeed](https://www.quantconnect.com/docs/v2/lean-cli/live-trading/other-data-feeds/iqfeed) for set up instructions.  
 If you select Polygon Data Feed, see [Polygon](https://www.quantconnect.com/docs/v2/lean-cli/live-trading/other-data-feeds/polygon) for set up instructions.
