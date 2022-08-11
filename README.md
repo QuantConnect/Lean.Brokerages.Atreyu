@@ -4,11 +4,13 @@
 &nbsp;
 &nbsp;
 
-## Using the Brokerage Plugin
+## Introduction
 
-QuantConnect enables you to run your algorithms in live mode with real-time market data. We have successfully hosted more than 200,000 live algorithms and have had more than $15B in volume traded on our servers since 2015. Brokerages supply a connection to the exchanges so that you can automate orders using LEAN. You can use multiple data feeds in live trading algorithms.
+This repository hosts the Atreyu Trading Brokerage Plugin Integration with the QuantConnect LEAN Algorithmic Trading Engine. LEAN is a brokerage agnostic operating system for quantitative finance. Thanks to open-source plugins such as this [LEAN](https://github.com/QuantConnect/Lean) can route strategies to almost any market.
 
-### About the brokerage
+[LEAN](https://github.com/QuantConnect/Lean) is maintained primarily by [QuantConnect](https://www.quantconnect.com), a US based technology company hosting a cloud algorithmic trading platform. QuantConnect has successfully hosted more than 200,000 live algorithms since 2015, and trades more than $1B volume per month.
+
+### About Atreyu Trading
 
 <p align="center">
 <picture >
@@ -17,8 +19,6 @@ QuantConnect enables you to run your algorithms in live mode with real-time mark
   <img alt="introduction" width="40%">
 </picture>
 <p>
-
-
 
 [Atreyu Trading](https://qnt.co/atreyu) was founded by George Kledaras and John Pyrovolakis in 2015 with the goal to connect quantitative managers to US markets. [Atreyu Trading](https://qnt.co/atreyu) provides access to US prime brokers for clients from all countries that are not on the FinCen Anti-Money Laundering list. In addition to market access, [Atreyu Trading](https://qnt.co/atreyu) provides information about short availability. [Atreyu Trading](https://qnt.co/atreyu) doesn't have regulatory approval to trade for retail accounts, so you need to be a high net worth ($25M+) individual or firm to open an account. You need an organization on the Trading Firm or Institution tier to use the [Atreyu Trading](https://qnt.co/atreyu) brokerage.
 
@@ -138,6 +138,7 @@ If you already have a live environment configured in your [Lean configuration fi
 
 ### QuantConnect Cloud
 
+  This plugin is integrated in the QuantConnect Cloud Platform where you can use this integration with a simple visual interface, and harness the QuantConnect Live Data Feed. For most users this is substantially cheaper and easier than self-hosting. For more information see the [QuantConnect-Atreyu Integration Page](https://www.quantconnect.com/brokerages/atreyu). 
 
 ## Account Types
 
