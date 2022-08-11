@@ -1,81 +1,29 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/79997186/183630747-3fc29619-2979-4349-81ac-cf51c10a1e90.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/79997186/183532420-94ff0fa8-7250-424a-a989-d12cc98d6225.png">
-  <img alt="header image">
-</picture>
+![header-cheetah](https://user-images.githubusercontent.com/79997186/184224088-de4f3003-0c22-4a17-8cc7-b341b8e5b55d.png)
 
 &nbsp;
 &nbsp;
 &nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
 
-<picture width="50%">
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/79997186/183628221-5dd0a8c4-00f3-4df7-ab4e-42ebd4ddd023.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/79997186/183532688-0fe44ac9-a6b6-4a58-a10d-710116cd2e69.png">
-  <img alt="introduction" width="570">
-</picture>
-
-&nbsp;
-&nbsp;
-&nbsp;
+## Using the Brokerage Plugin
 
 QuantConnect enables you to run your algorithms in live mode with real-time market data. We have successfully hosted more than 200,000 live algorithms and have had more than $15B in volume traded on our servers since 2015. Brokerages supply a connection to the exchanges so that you can automate orders using LEAN. You can use multiple data feeds in live trading algorithms.
 
 ### About the brokerage
 
+<p align="center">
+<picture >
+  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/79997186/184226065-f7a7679b-9800-4545-910f-c853931a8311.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/79997186/184226246-7e327bc2-52f0-46c1-8902-8df5f212688c.png">
+  <img alt="introduction" width="40%">
+</picture>
+<p>
+
+
+
 [Atreyu Trading](https://qnt.co/atreyu) was founded by George Kledaras and John Pyrovolakis in 2015 with the goal to connect quantitative managers to US markets. [Atreyu Trading](https://qnt.co/atreyu) provides access to US prime brokers for clients from all countries that are not on the FinCen Anti-Money Laundering list. In addition to market access, [Atreyu Trading](https://qnt.co/atreyu) provides information about short availability. [Atreyu Trading](https://qnt.co/atreyu) doesn't have regulatory approval to trade for retail accounts, so you need to be a high net worth ($25M+) individual or firm to open an account. You need an organization on the Trading Firm or Institution tier to use the [Atreyu Trading](https://qnt.co/atreyu) brokerage.
 
-&nbsp;
-&nbsp;
-&nbsp;
 
-<picture width="50%">
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/79997186/184026487-d2d535b5-5595-4335-9651-c6a0b43d6866.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/79997186/184026370-1428beaf-bab7-4b1c-983d-44d62e33d440.png">
-  <img alt="introduction" width="570">
-</picture>
-
-&nbsp;
-&nbsp;
-&nbsp;
-
-### QuantConnect Cloud
-
-You must have an available [live trading node](https://www.quantconnect.com/docs/v2/our-platform/organizations/resources#04-Live-Trading-Nodes) for each live trading algorithm you deploy.
-
-Follow these steps to deploy a live algorithm:
-
-1.  [Open the project](https://www.quantconnect.com/docs/v2/our-platform/projects/project-management#02-View-All-Projects) you want to deploy.
-
-2.  Click the <img src="https://user-images.githubusercontent.com/79997186/183628750-db93a445-d4ae-4661-8019-0c1f5e21a698.png" width="28px"> Deploy Live icon.
-
-3.  On the Deploy Live page, click the Brokerage field and then click Atreyu Brokerage from the drop-down menu.
-
-4.  Enter your [Atreyu Trading](https://qnt.co/atreyu) user name, password, client ID, request port, and subscription port.
-
-5.  Your account details are not saved on QuantConnect. Click the Node field and then click the live trading node that you want to use from the drop-down menu.
-
-6.  If your brokerage account has existing cash holdings, follow these steps:
-
-    1.  In the Algorithm Cash State section, click Show.
-    2.  Click Add Currency.
-    3.  Enter the currency ticker (for example, USD or BTC) and a quantity.
-
-7.  If your brokerage account has existing position holdings, follow these steps:
-
-    1.  In the Algorithm Holdings State section, click Show.
-    2.  Click Add Holding.
-    3.  Enter the symbol ID, symbol, quantity, and average price.
-
-8.  (Optional) [Set up notifications](https://www.quantconnect.com/docs/v2/our-platform/live-trading/notifications).
-
-9.  Configure the Automatically restart algorithm setting.
-
-10. By enabling automatic restarts, the algorithm will use best efforts to restart the algorithm if it fails due to a runtime error. This can help improve the algorithm's resilience to temporary outages such as a brokerage API disconnection.Click Deploy.
-
-The deployment process can take up to 5 minutes. When the algorithm deploys, the [live results page](https://www.quantconnect.com/docs/v2/our-platform/live-trading/results) displays. If you know your brokerage positions before you deployed, you can verify they have been loaded properly by checking your equity value in the runtime statistics, your cashbook holdings, and your position holdings.
+## Using the Brokerage Plugin
 
 ### Locally
 
@@ -187,35 +135,16 @@ If you select Polygon Data Feed, see [Polygon](https://www.quantconnect.com/docs
 
 If you already have a live environment configured in your [Lean configuration file](https://www.quantconnect.com/docs/v2/lean-cli/initialization/configuration#03-Lean-Configuration), you can skip the interactive wizard by providing the --environment `<value>` option in step 2. The value of this option must be the name of an environment which has live-mode set to true.
 
-&nbsp;
-&nbsp;
-&nbsp;
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/79997186/184027404-63fbeeb9-1289-4ecd-b750-26e166ed120c.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/79997186/184027259-ab82874d-7a3b-40f5-9654-524e3404331e.png">
-  <img alt="header image" width="570">
-</picture>
+### QuantConnect Cloud
 
-&nbsp;
-&nbsp;
-&nbsp;
+
+## Account Types
 
 [Atreyu Trading](https://qnt.co/atreyu) supports cash and margin accounts.
 
-&nbsp;
-&nbsp;
-&nbsp;
+## Order Types and Asset Classes
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/79997186/184029466-269d8d45-5598-409a-ad09-919b7d57aabc.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/79997186/184029319-81e56921-7a39-434f-9fbd-df1828e0e8ed.png">
-  <img alt="header image" width="570">
-</picture>
-
-&nbsp;
-&nbsp;
-&nbsp;
 
 [Atreyu Trading](https://qnt.co/atreyu) supports trading US Equities and the following order types:
 
@@ -223,39 +152,17 @@ If you already have a live environment configured in your [Lean configuration fi
 - Limit Order
 - Market-On-Close Order
 
-&nbsp;
-&nbsp;
-&nbsp;
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/79997186/184031226-c77e4ed4-6a22-4a89-9ce9-965718839576.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/79997186/184030969-66ba2db3-ac26-4638-a0d0-8efd8da08cfc.png">
-  <img alt="header image" width="570">
-</picture>
-
-&nbsp;
-&nbsp;
-&nbsp;
+## Downloading Data
 
 For local deployment, the algorithm needs to download the following dataset:
 
-- US Equities Security Master provided by QuantConnect
-- US Coarse Universe
-- [Atreyu Trading](https://qnt.co/atreyu) does not provide historical data.
+[US Equities Security Master](https://www.quantconnect.com/datasets/quantconnect-us-equity-security-master) provided by QuantConnect  
+[US Coarse Universe](https://www.quantconnect.com/datasets/quantconnect-us-coarse-universe-constituents)  
+[Atreyu Trading](https://www.atreyutrading.com/) does not provide historical data.
 
-&nbsp;
-&nbsp;
-&nbsp;
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/79997186/184041212-f2febdfe-5a10-44d3-94b0-514339c74107.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/79997186/184041210-ef6e816e-9a06-46fd-a5ad-591cc49bb4dd.png">
-  <img alt="header image" width="570">
-</picture>
-
-&nbsp;
-&nbsp;
-&nbsp;
+## Brokerage Model
 
 Lean models the brokerage behavior for backtesting purposes. The margin model is used in live trading to avoid placing orders that will be rejected due to insufficient buying power.
 
@@ -264,6 +171,8 @@ You can set the Brokerage Model with the following statements
     SetBrokerageModel(BrokerageName.Atreyu, AccountType.Cash);
     SetBrokerageModel(BrokerageName.Atreyu, AccountType.Margin);
 
+[Read Documentation](https://www.quantconnect.com/docs/v2/our-platform/live-trading/brokerages/atreyu)
+
 ### Fees
 
 We model the order fees of [Atreyu Trading](https://qnt.co/atreyu), which are $0.0035/share.
@@ -271,6 +180,8 @@ We model the order fees of [Atreyu Trading](https://qnt.co/atreyu), which are $0
 ### Margin
 
 We model buying power and margin calls to ensure your algorithm stays within the margin requirements.
+
+[Read Documentation](https://www.quantconnect.com/docs/v2/our-platform/live-trading/brokerages/atreyu)
 
 #### Buying Power
 
@@ -314,13 +225,22 @@ LEAN Engine is an open-source algorithmic trading engine built for easy strategy
 
 The core of the LEAN Engine is written in C#, but it operates seamlessly on Linux, Mac and Windows operating systems. To use it, you can write algorithms in Python 3.6 or C#. QuantConnect maintains the LEAN project and uses it to drive the web-based algorithmic trading platform on the website.
 
-&nbsp;
-&nbsp;
-
 ## Contributions
 
 Contributions are warmly very welcomed but we ask you to read the existing code to see how it is formatted, commented and ensure contributions match the existing style. All code submissions must include accompanying tests. Please see the [contributor guide lines](https://github.com/QuantConnect/Lean/blob/master/CONTRIBUTING.md).
 
 ## Code of Conduct
 
+We ask that our users adhere to the community [code of conduct](https://www.quantconnect.com/codeofconduct) to ensure QuantConnect remains a safe, healthy environment for
+high quality quantitative trading discussions.
+
 ## License Model
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You
+may obtain a copy of the License at
+
+<http://www.apache.org/licenses/LICENSE-2.0>
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
+governing permissions and limitations under the License.
