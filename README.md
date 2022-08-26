@@ -25,13 +25,17 @@ This repository hosts the Atreyu Trading Brokerage Plugin Integration with the Q
 
 ## Using the Brokerage Plugin
   
-### QuantConnect Cloud
+### Deploying Atreyu with VSCode User Interace
 
-  This plugin is integrated in the QuantConnect Cloud Platform where you can use this integration with a simple visual interface, and harness the QuantConnect Live Data Feed. For most users this is substantially cheaper and easier than self-hosting. For more information see the [QuantConnect-Atreyu Integration Page](https://www.quantconnect.com/brokerages/atreyu). 
+  You can deploy using a visual interface in the QuantConnect cloud. For instructions, see the [QuantConnect-Atreyu Integration Page](https://www.quantconnect.com/brokerages/atreyu). 
+  
+  ![Atreyu Deployment Wizard](https://cdn.quantconnect.com/i/tu/atreyu-deploy-wizard.jpg)
+
+  In the QuantConnect Cloud Platform, you can harness the QuantConnect Live Data Feed. For most users, this is substantially cheaper and easier than self-hosting.
   
   *Additionally, Atreyu Trading is sponsoring infrastructure costs for users of the QuantConnect cloud platform.*
   
-### Locally
+### Deploying Atreyu with LEAN CLI
 
 Follow these steps to start local live trading with the Atreyu brokerage:
 
