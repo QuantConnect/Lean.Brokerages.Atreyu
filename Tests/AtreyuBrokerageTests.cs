@@ -116,14 +116,14 @@ namespace QuantConnect.Atreyu.Tests
             var order = PlaceOrderWaitForStatus(parameters.CreateLongOrder(GetDefaultQuantity()), parameters.ExpectedStatus);
 
             var canceledOrderStatusEvent = new ManualResetEvent(false);
-            EventHandler<OrderEvent> orderStatusCallback = (sender, fill) =>
+            EventHandler<List<OrderEvent>> orderStatusCallback = (sender, fill) =>
             {
-                if (fill.Status == OrderStatus.Canceled)
+                if (fill.Single().Status == OrderStatus.Canceled)
                 {
                     canceledOrderStatusEvent.Set();
                 }
             };
-            Brokerage.OrderStatusChanged += orderStatusCallback;
+            Brokerage.OrdersStatusChanged += orderStatusCallback;
             var cancelResult = false;
             try
             {
@@ -163,7 +163,7 @@ namespace QuantConnect.Atreyu.Tests
             // We do NOT expect the OrderStatus.Canceled event
             Assert.IsFalse(canceledOrderStatusEvent.WaitOne(new TimeSpan(0, 0, 10)));
 
-            Brokerage.OrderStatusChanged -= orderStatusCallback;
+            Brokerage.OrdersStatusChanged -= orderStatusCallback;
         }
 
         [Test, TestCaseSource(nameof(FilledParameters))]

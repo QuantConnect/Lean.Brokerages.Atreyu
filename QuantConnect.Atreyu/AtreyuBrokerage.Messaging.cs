@@ -80,7 +80,7 @@ namespace QuantConnect.Atreyu
             }
 
             var atreyuOrderId = report.OrigClOrdID ?? report.ClOrdID;
-            var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
+            var order = _orderProvider.GetOrdersByBrokerageId(atreyuOrderId)?.SingleOrDefault();
             if (order != null)
             {
                 OnOrderEvent(new OrderEvent(order, Time.ParseFIXUtcTimestamp(report.TransactTime), OrderFee.Zero, $"Atreyu Order Event. Message: {report.Text}")
@@ -126,7 +126,7 @@ namespace QuantConnect.Atreyu
             }
 
             var atreyuOrderId = report.OrigClOrdID ?? report.ClOrdID;
-            var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
+            var order = _orderProvider.GetOrdersByBrokerageId(atreyuOrderId)?.SingleOrDefault();
             try
             {
                 if (order == null)
@@ -170,7 +170,7 @@ namespace QuantConnect.Atreyu
         private void OnCancelRejected(OrderCancelRejectReport report)
         {
             var atreyuOrderId = report.OrigClOrdID ?? report.ClOrdID;
-            var order = _orderProvider.GetOrderByBrokerageId(atreyuOrderId);
+            var order = _orderProvider.GetOrdersByBrokerageId(atreyuOrderId)?.SingleOrDefault();
             if (order != null)
             {
                 order.BrokerId.Remove(report.ClOrdID);
